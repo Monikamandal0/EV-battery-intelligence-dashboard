@@ -165,6 +165,13 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [opacity, setOpacity] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
@@ -338,7 +345,7 @@ export default function Dashboard() {
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">Capacity retention (%) for active vehicles EV-001, EV-002, and EV-003</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
                 <span className="text-[11px] text-slate-400 mr-3">EV-001</span>
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
@@ -348,14 +355,14 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="h-72 w-full">
+            <div className="w-full" style={{ height: isMobile ? '200px' : '288px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={degradationData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} interval={isMobile ? 2 : 0} />
                   <YAxis domain={[30, 100]} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} labelStyle={{ color: '#94a3b8' }} />
                   <Line type="monotone" dataKey="EV-001" stroke="#2dd4bf" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} />
@@ -364,6 +371,23 @@ export default function Dashboard() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+
+            {isMobile && (
+              <div className="flex justify-center items-center gap-4 mt-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-teal-400"></span>
+                  <span className="text-[11px] text-slate-400">EV-001</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                  <span className="text-[11px] text-slate-400">EV-002</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                  <span className="text-[11px] text-slate-400">EV-003</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CHARGE CYCLE BAR CHART */}
@@ -376,14 +400,14 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 mt-1">Daily cycles across fleet (Last 7 Days) vs. 45-cycle target average</p>
             </div>
 
-            <div className="h-64 w-full mt-6">
+            <div className="w-full mt-6" style={{ height: isMobile ? '180px' : '256px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chargeCycleData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} />
+                  <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} tickFormatter={(val) => isMobile ? val.charAt(0) : val} />
                   <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
-                  <Bar dataKey="cycles" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32} />
+                  <Bar dataKey="cycles" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={isMobile ? 18 : 32} />
                   <Line type="monotone" dataKey="average" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -468,7 +492,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-6 items-start">
 
           {/* LIVE ALERTS FEED */}
           <div className="glass-card p-6 rounded-2xl flex flex-col h-[350px]">
@@ -730,16 +754,18 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mt-5">
+                  <div className="flex flex-col sm:flex-row gap-2 mt-5">
                     <button
                       onClick={() => handleOpenScheduleModal(rec.vehicle)}
-                      className="py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center font-bold"
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       Schedule
                     </button>
                     <button
                       onClick={() => navigate('/maintenance')}
-                      className="py-2 border border-slate-800 hover:border-slate-700 bg-slate-950/20 text-slate-400 hover:text-slate-200 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
+                      className="w-full py-2 border border-slate-800 hover:border-slate-700 bg-slate-955 text-slate-400 hover:text-slate-200 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       Details
                     </button>

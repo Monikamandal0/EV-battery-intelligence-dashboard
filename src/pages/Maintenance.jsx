@@ -31,6 +31,13 @@ export default function Maintenance() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [opacity, setOpacity] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Modal & Form States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -438,14 +445,14 @@ export default function Maintenance() {
             <p className="text-xs text-slate-400 mt-1">Weekly volume projection classified by urgency parameters</p>
           </div>
 
-          <div className="h-64 w-full mt-6">
+          <div className="w-full mt-6" style={{ height: isMobile ? '180px' : '256px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={timelineData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                 <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
+                <Legend verticalAlign="top" height={32} wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }} />
                 <Bar dataKey="Critical" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="High" stackId="a" fill="#f97316" />
                 <Bar dataKey="Medium" stackId="a" fill="#eab308" />
@@ -465,16 +472,16 @@ export default function Maintenance() {
             <p className="text-xs text-slate-400 mt-1">Cost distribution across components under risk forecast</p>
           </div>
 
-          <div className="h-64 w-full mt-6 flex flex-col sm:flex-row items-center justify-center gap-6">
-            <div className="w-full sm:w-1/2 h-full">
+          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-6 mt-6" style={{ height: isMobile ? 'auto' : '256px' }}>
+            <div className="w-full sm:w-1/2" style={{ height: isMobile ? '160px' : '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={isMobile ? 45 : 60}
+                    outerRadius={isMobile ? 65 : 80}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -521,7 +528,7 @@ export default function Maintenance() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-800/60 text-slate-400 uppercase tracking-wider text-[10px] font-bold">
@@ -566,60 +573,64 @@ export default function Maintenance() {
 
       {/* SCHEDULE MAINTENANCE MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 transition-all duration-300">
-          <div className="bg-[#121824] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
-              Schedule Maintenance for {selectedVehicle}
-            </h3>
-            <p className="text-xs text-slate-400 font-semibold mb-4 uppercase">
-              {selectedIssue}
-            </p>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-0 sm:p-4 transition-all duration-300">
+          <div className="bg-[#121824] border border-slate-800 rounded-none sm:rounded-3xl max-w-md w-full h-full sm:h-auto p-6 shadow-2xl relative overflow-y-auto flex flex-col justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
+                Schedule Maintenance for {selectedVehicle}
+              </h3>
+              <p className="text-xs text-slate-400 font-semibold mb-4 uppercase">
+                {selectedIssue}
+              </p>
 
-            <form onSubmit={handleConfirmSchedule} className="space-y-4">
-              <div>
-                <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
-                  Select Maintenance Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                />
-              </div>
+              <form onSubmit={handleConfirmSchedule} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
+                    Select Maintenance Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
-                  Assign Maintenance Technician
-                </label>
-                <select
-                  value={selectedTechnician}
-                  onChange={(e) => setSelectedTechnician(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                >
-                  <option value="Auto-assign">Auto-assign (Fastest Response)</option>
-                  <option value="Technician A">Technician A (HV Certified)</option>
-                  <option value="Technician B">Technician B (BMS Specialist)</option>
-                </select>
-              </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
+                    Assign Maintenance Technician
+                  </label>
+                  <select
+                    value={selectedTechnician}
+                    onChange={(e) => setSelectedTechnician(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  >
+                    <option value="Auto-assign">Auto-assign (Fastest Response)</option>
+                    <option value="Technician A">Technician A (HV Certified)</option>
+                    <option value="Technician B">Technician B (BMS Specialist)</option>
+                  </select>
+                </div>
 
-              <div className="flex gap-2.5 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-emerald-950/20 cursor-pointer text-center"
-                >
-                  Confirm Schedule
-                </button>
-              </div>
-            </form>
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="w-full py-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
+                    style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-emerald-950/20 cursor-pointer text-center font-bold"
+                    style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    Confirm Schedule
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

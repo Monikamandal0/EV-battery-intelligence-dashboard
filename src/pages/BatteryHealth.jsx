@@ -78,6 +78,13 @@ export default function BatteryHealth() {
   const { vehicles, setToast } = useOutletContext();
   const location = useLocation();
   const [selectedVehicle, setSelectedVehicle] = useState(location.state?.selectedVehicle || 'Select Vehicle');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Staggered gauge loading states
   const [animatedSoh, setAnimatedSoh] = useState({
@@ -227,10 +234,10 @@ export default function BatteryHealth() {
 
               {/* Gauge Area */}
               <div className="flex justify-center items-center py-4 relative">
-                <div className="relative w-[200px] h-[115px] flex items-center justify-center overflow-hidden">
+                <div className="relative flex items-center justify-center overflow-hidden" style={{ width: isMobile ? '150px' : '200px', height: isMobile ? '85px' : '115px' }}>
                   <RadialBarChart
-                    width={200}
-                    height={200}
+                    width={isMobile ? 150 : 200}
+                    height={isMobile ? 150 : 200}
                     innerRadius="72%"
                     outerRadius="100%"
                     data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
@@ -244,10 +251,10 @@ export default function BatteryHealth() {
                   
                   {/* Gauge Center Info Overlay */}
                   <div className="absolute bottom-2 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-white font-mono leading-none">
+                    <span className="text-xl sm:text-2xl font-black text-white font-mono leading-none">
                       {isIsolated ? '0' : displaySoh}%
                     </span>
-                    <span className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">
+                    <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">
                       State of Health
                     </span>
                   </div>
@@ -257,16 +264,16 @@ export default function BatteryHealth() {
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-2 text-center py-3 border-t border-b border-slate-800/40 mt-2">
                 <div>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Est. Range</span>
-                  <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '0' : `${v.estimatedRange} km`}</span>
+                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Est. Range</span>
+                  <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{isIsolated ? '0' : `${v.estimatedRange} km`}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Pack Temp</span>
-                  <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '—' : `${v.temp} °C`}</span>
+                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Pack Temp</span>
+                  <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{isIsolated ? '—' : `${v.temp} °C`}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Bus Voltage</span>
-                  <span className="text-xs font-mono font-bold text-slate-200">{v.voltage} V</span>
+                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Bus Voltage</span>
+                  <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{v.voltage} V</span>
                 </div>
               </div>
 
@@ -276,7 +283,7 @@ export default function BatteryHealth() {
                   <span>Cell Balancing Heatmap</span>
                   <span>8 Pack Groups</span>
                 </div>
-                <div className="flex gap-1.5 justify-between">
+                <div className="grid grid-cols-4 min-[420px]:grid-cols-8 gap-1">
                   {cells.map((val, idx) => {
                     let cellColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
                     if (isIsolated) {
@@ -307,6 +314,7 @@ export default function BatteryHealth() {
                     ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30'
                     : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/40'
                 }`}
+                style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 Schedule Service
               </button>

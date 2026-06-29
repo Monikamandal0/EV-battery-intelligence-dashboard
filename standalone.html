@@ -819,6 +819,13 @@
         const [searchQuery, setSearchQuery] = useState('');
         const [isLoading, setIsLoading] = useState(true);
         const [opacity, setOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
         const [selectedVehicle, setSelectedVehicle] = useState('');
@@ -968,17 +975,17 @@
                         Battery Capacity Degradation (12 Months)
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                    <div className={`flex items-center gap-2 text-[10px] text-slate-400 ${isMobile ? 'justify-center w-full mt-2' : ''}`}>
                       <span className="w-2 h-2 rounded-full bg-teal-400 inline-block mr-1"></span>EV-001
                       <span className="w-2 h-2 rounded-full bg-amber-400 inline-block ml-3 mr-1"></span>EV-002
                       <span className="w-2 h-2 rounded-full bg-red-400 inline-block ml-3 mr-1"></span>EV-003
                     </div>
                   </div>
-                  <div className="h-72 w-full">
+                  <div className="w-full" style={{ height: isMobile ? '200px' : '288px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={degradationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} />
+                        <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} interval={isMobile ? 2 : 0} />
                         <YAxis domain={[30, 100]} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
                         <Line type="monotone" dataKey="EV-001" stroke="#2dd4bf" strokeWidth={2} dot={{ r: 3 }} />
@@ -990,14 +997,14 @@
                 </div>
 
                 <div className="glass-card p-6 rounded-2xl">
-                  <div className="h-64 w-full">
+                  <div className="w-full" style={{ height: isMobile ? '180px' : '256px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={chargeCycleData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} />
+                        <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} tickFormatter={(val) => isMobile ? val.substring(0, 1) : val} />
                         <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
-                        <Bar dataKey="cycles" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32} />
+                        <Bar dataKey="cycles" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={isMobile ? 18 : 32} />
                         <Line type="monotone" dataKey="average" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -1062,7 +1069,7 @@
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-6">
                 <div className="glass-card p-6 rounded-2xl flex flex-col h-[350px]">
                   <div className="flex items-center justify-between border-b border-slate-850 pb-2 mb-3">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -1346,6 +1353,13 @@
 
       function BatteryHealth({ vehicles, setToast }) {
         const [selectedVehicle, setSelectedVehicle] = useState('Select Vehicle');
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         const [animatedSoh, setAnimatedSoh] = useState({
           'EV-001': 0,
@@ -1427,6 +1441,7 @@
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
 
+
         useEffect(() => {
           const timer = setTimeout(() => {
             setPageLoading(false);
@@ -1466,10 +1481,10 @@
                     </div>
 
                     <div className="flex justify-center items-center py-4 relative">
-                      <div className="relative w-[200px] h-[115px] flex items-center justify-center overflow-hidden">
+                      <div className="relative flex items-center justify-center overflow-hidden" style={{ width: isMobile ? '150px' : '200px', height: isMobile ? '85px' : '115px' }}>
                         <RadialBarChart
-                          width={200}
-                          height={200}
+                          width={isMobile ? 150 : 200}
+                          height={isMobile ? 150 : 200}
                           innerRadius="72%"
                           outerRadius="100%"
                           data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
@@ -1482,24 +1497,24 @@
                         </RadialBarChart>
                         
                         <div className="absolute bottom-2 flex flex-col items-center justify-center pointer-events-none">
-                          <span className="text-2xl font-black text-white font-mono leading-none">{isIsolated ? '0' : displaySoh}%</span>
-                          <span className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">State of Health</span>
+                          <span className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black text-white font-mono leading-none`}>{isIsolated ? '0' : displaySoh}%</span>
+                          <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">State of Health</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-center py-3 border-t border-b border-slate-800/40 mt-2">
                       <div>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Est. Range</span>
-                        <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '0' : `${v.estimatedRange} km`}</span>
+                        <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Est. Range</span>
+                        <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{isIsolated ? '0' : `${v.estimatedRange} km`}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Pack Temp</span>
-                        <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '—' : `${v.temp} °C`}</span>
+                        <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Pack Temp</span>
+                        <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{isIsolated ? '—' : `${v.temp} °C`}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Bus Voltage</span>
-                        <span className="text-xs font-mono font-bold text-slate-200">{v.voltage} V</span>
+                        <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Bus Voltage</span>
+                        <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-200">{v.voltage} V</span>
                       </div>
                     </div>
 
@@ -1508,7 +1523,7 @@
                         <span>Cell Balancing Heatmap</span>
                         <span>8 Pack Groups</span>
                       </div>
-                      <div className="flex gap-1.5 justify-between">
+                      <div className="grid grid-cols-4 min-[420px]:grid-cols-8 gap-1">
                         {cells.map((val, idx) => {
                           let cellColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
                           if (isIsolated) {
@@ -1538,6 +1553,7 @@
                           ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30'
                           : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/40'
                       }`}
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       Schedule Service
                     </button>
@@ -1590,6 +1606,14 @@
         const [filterVehicle, setFilterVehicle] = useState('ALL');
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+        const [showAllColumns, setShowAllColumns] = useState(false);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -1617,9 +1641,14 @@
           <ChargeHistorySkeleton />
         ) : (
           <div className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h2 className="text-xl font-bold text-white">Charge History logs</h2>
-              <select value={filterVehicle} onChange={e => setFilterVehicle(e.target.value)} className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200">
+              <select
+                value={filterVehicle}
+                onChange={e => setFilterVehicle(e.target.value)}
+                className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 w-full sm:w-auto"
+                style={{ minHeight: '44px' }}
+              >
                 <option value="ALL">All Vehicles</option>
                 {vehicles.map(v => <option key={v.id} value={v.id}>{v.id}</option>)}
               </select>
@@ -1628,7 +1657,7 @@
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-card p-6 rounded-2xl">
                 <h3 className="text-sm font-bold text-white mb-4">Charge Frequency</h3>
-                <div className="h-48 w-full">
+                <div className="w-full" style={{ height: isMobile ? '180px' : '192px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chargeFrequencyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -1646,22 +1675,57 @@
 
               <div className="glass-card p-6 rounded-2xl">
                 <h3 className="text-sm font-bold text-white mb-4">Charge Session Logs</h3>
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-500 uppercase text-[9px]"><th className="py-2 font-semibold">Date</th><th className="py-2">Vehicle</th><th className="py-2 text-center">Start</th><th className="py-2 text-center">End</th><th className="py-2 text-center">Energy</th></tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(l => (
-                      <tr key={l.id} className="border-b border-slate-850 text-slate-300">
-                        <td className="py-2.5 font-medium">{l.date}</td>
-                        <td className="py-2.5 font-bold text-white">{l.vehicle}</td>
-                        <td className="py-2.5 text-center font-mono">{l.start}%</td>
-                        <td className="py-2.5 text-center font-mono">{l.end}%</td>
-                        <td className="py-2.5 text-center font-mono text-emerald-400">+{l.energy} kWh</td>
+                <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500 uppercase text-[9px]">
+                        {!(isMobile && !showAllColumns) && <th className="py-2 font-semibold">Date</th>}
+                        <th className="py-2">Vehicle</th>
+                        {!(isMobile && !showAllColumns) && (
+                          <>
+                            <th className="py-2 text-center">Start</th>
+                            <th className="py-2 text-center">End</th>
+                          </>
+                        )}
+                        {isMobile && !showAllColumns && <th className="py-2 text-center">SOH%</th>}
+                        <th className="py-2 text-center">{isMobile && !showAllColumns ? 'Status' : 'Energy'}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filtered.map(l => {
+                        const showThree = isMobile && !showAllColumns;
+                        return (
+                          <tr key={l.id} className="border-b border-slate-850 text-slate-300">
+                            {!showThree && <td className="py-2.5 font-medium">{l.date}</td>}
+                            <td className="py-2.5 font-bold text-white">{l.vehicle}</td>
+                            {!showThree && (
+                              <>
+                                <td className="py-2.5 text-center font-mono">{l.start}%</td>
+                                <td className="py-2.5 text-center font-mono">{l.end}%</td>
+                              </>
+                            )}
+                            {showThree && <td className="py-2.5 text-center font-mono font-bold text-slate-200">{l.end}%</td>}
+                            <td className="py-2.5 text-center font-mono text-emerald-400">
+                              {showThree ? 'DC Fast' : `+${l.energy} kWh`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {isMobile && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={() => setShowAllColumns(!showAllColumns)}
+                      className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {showAllColumns ? 'Show Less' : 'Show More'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1672,6 +1736,13 @@
         const [soc, setSoc] = useState(88);
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -1823,11 +1894,19 @@
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-800/40">
-                  <button onClick={handleReset} className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700/40 transition-colors">
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-slate-800/40">
+                  <button
+                    onClick={handleReset}
+                    className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/40 transition-colors cursor-pointer"
+                    style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
                     Reset Defaults
                   </button>
-                  <button onClick={handleApplyToFleet} className="py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-colors">
+                  <button
+                    onClick={handleApplyToFleet}
+                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                    style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
                     Apply to Fleet
                   </button>
                 </div>
@@ -1858,7 +1937,7 @@
                 <div className="glass-card p-6 rounded-2xl">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Active Fleet Range Side-by-Side</h3>
                   
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="border-b border-slate-800 text-slate-400 uppercase text-[9px] tracking-wider">
@@ -1922,6 +2001,13 @@
 
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -2028,7 +2114,7 @@
             });
 
             const popupHtml = `
-              <div class="w-[220px] p-1 space-y-3 text-slate-200 font-sans" style="font-family: system-ui, sans-serif;">
+              <div class="w-full max-w-[200px] sm:w-[220px] max-h-[250px] overflow-y-auto p-1 space-y-3 text-slate-200 font-sans" style="font-family: system-ui, sans-serif; max-height: 250px; overflow-y: auto;">
                 <div class="flex justify-between items-center" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span class="text-base font-black text-white" style="font-weight: 900; font-size: 14px; color: white;">${v.id}</span>
                   <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" 
@@ -2133,39 +2219,41 @@
               <p className="text-xs text-slate-400 mt-1">Live geographic tracking of fleet assets, diagnostic indicators, and operational regions</p>
             </div>
 
-            <div className="flex justify-between items-center gap-4 flex-wrap">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="px-3.5 py-1.5 bg-slate-900 border border-slate-800/80 rounded-full text-xs font-bold text-slate-300">
-                  📍 {vehicles.length} Vehicles Tracked
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+              <div className="flex gap-2 items-center overflow-x-auto w-full lg:w-auto pb-2.5 sm:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <span className="shrink-0 px-3.5 py-1.5 bg-slate-900 border border-slate-800/80 rounded-full text-xs font-bold text-slate-300">
+                  📍 {vehicles.length} Vehicles
                 </span>
-                <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold">
+                <span className="shrink-0 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold">
                   🟢 {healthyCount} Healthy
                 </span>
-                <span className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold">
+                <span className="shrink-0 px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold">
                   🟡 {warningCount} Warning
                 </span>
-                <span className="px-3.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-bold">
+                <span className="shrink-0 px-3.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-bold">
                   🔴 {criticalCount} Critical
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                 <button
                   onClick={handleFitAll}
-                  className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/40 rounded-xl text-xs font-bold transition-colors"
+                  className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/40 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   Fit All Vehicles
                 </button>
                 <button
                   onClick={handleCenterOnCritical}
-                  className="py-2 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors animate-pulse-glow"
+                  className="w-full sm:w-auto py-2.5 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors animate-pulse-glow cursor-pointer"
+                  style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   Center on Critical
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 w-full rounded-2xl border border-slate-800/60 overflow-hidden relative min-h-[500px] z-10 shadow-inner">
+            <div className="w-full rounded-2xl border border-slate-800/60 overflow-hidden relative z-10 shadow-inner flex-1 min-h-[400px] md:min-h-[500px]">
               <div ref={mapContainerRef} className="w-full h-full" style={{ width: '100%', height: '100%' }}></div>
 
               <div className="absolute bottom-6 right-6 z-[400] glass-panel bg-slate-950/80 border border-slate-800/80 p-4 rounded-xl text-[10px] space-y-2 max-w-[180px] shadow-2xl pointer-events-auto leading-normal">
@@ -2188,16 +2276,15 @@
         );
       }
 
-      function Settings({ settings, setSettings, setToast }) {
+      function Settings({ settings, setSettings, setToast, handleExportPDF, handleExportCSV }) {
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
         useEffect(() => {
-          const timer = setTimeout(() => {
-            setPageLoading(false);
-            setTimeout(() => setPageOpacity(1), 50);
-          }, 1800);
-          return () => clearTimeout(timer);
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
         }, []);
 
         const handleValChange = (field, val) => {
@@ -2232,12 +2319,43 @@
                   </div>
                 </div>
               </div>
-              <div className="lg:col-span-1 glass-card p-6 rounded-2xl flex flex-col justify-between">
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between"><span>Model Version</span><span className="font-bold">EV-EdgeAI v2.0.4</span></div>
-                  <div className="flex justify-between"><span>Status</span><span className="text-emerald-400 font-bold">Active</span></div>
+              <div className="lg:col-span-1 space-y-6">
+                <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between"><span>Model Version</span><span className="font-bold">EV-EdgeAI v2.0.4</span></div>
+                    <div className="flex justify-between"><span>Status</span><span className="text-emerald-400 font-bold">Active</span></div>
+                  </div>
+                  <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl mt-4" style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Save Configuration</button>
                 </div>
-                <button type="submit" className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl mt-4">Save Configuration</button>
+
+                {/* Download Report Card */}
+                <div className="glass-card p-6 rounded-2xl space-y-4">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Icons.Download className="w-4 h-4 text-emerald-400" />
+                    Download Report Panel
+                  </h3>
+                  <p className="text-xs text-slate-400">Export active fleet diagnostic data as CSV or PDF report format</p>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleExportPDF}
+                      className="w-full py-2.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 border border-red-900/60 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer font-bold"
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Icons.FileDown className="w-4 h-4 text-red-400" />
+                      <span>Export PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportCSV}
+                      className="w-full py-2.5 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 border border-emerald-900/60 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer font-bold"
+                      style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Icons.FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                      <span>Export CSV</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
@@ -2276,6 +2394,13 @@
       function Maintenance({ vehicles, setToast, recommendations, setRecommendations }) {
         const [isLoading, setIsLoading] = useState(true);
         const [opacity, setOpacity] = useState(0);
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+        useEffect(() => {
+          const handleResize = () => setIsMobile(window.innerWidth < 768);
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+        }, []);
 
         // Modal & Form States
         const [isModalOpen, setIsModalOpen] = useState(false);
@@ -2671,14 +2796,14 @@
                   <p className="text-xs text-slate-400 mt-1">Weekly volume projection classified by urgency parameters</p>
                 </div>
 
-                <div className="h-64 w-full mt-6">
+                <div className="w-full mt-6" style={{ height: isMobile ? '180px' : '256px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={timelineData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                       <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                       <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
-                      <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
+                      <Legend verticalAlign="top" height={32} wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }} />
                       <Bar dataKey="Critical" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="High" stackId="a" fill="#f97316" />
                       <Bar dataKey="Medium" stackId="a" fill="#eab308" />
@@ -2696,16 +2821,16 @@
                   <p className="text-xs text-slate-400 mt-1">Cost distribution across components under risk forecast</p>
                 </div>
 
-                <div className="h-64 w-full mt-6 flex flex-col sm:flex-row items-center justify-center gap-6">
-                  <div className="w-full sm:w-1/2 h-full">
+                <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-6 mt-6" style={{ height: isMobile ? 'auto' : '256px' }}>
+                  <div className="w-full sm:w-1/2" style={{ height: isMobile ? '160px' : '100%' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={pieData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
+                          innerRadius={isMobile ? 45 : 60}
+                          outerRadius={isMobile ? 65 : 80}
                           paddingAngle={4}
                           dataKey="value"
                         >
@@ -2752,7 +2877,7 @@
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800/60 text-slate-400 uppercase tracking-wider text-[10px] font-bold">
@@ -2797,60 +2922,64 @@
 
             {/* Modal */}
             {isModalOpen && (
-              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 transition-all duration-300">
-                <div className="bg-[#121824] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
-                    Schedule Maintenance for {selectedVehicle}
-                  </h3>
-                  <p className="text-xs text-slate-400 font-semibold mb-4 uppercase">
-                    {selectedIssue}
-                  </p>
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-0 sm:p-4 transition-all duration-300">
+                <div className="bg-[#121824] border border-slate-800 rounded-none sm:rounded-3xl max-w-md w-full h-full sm:h-auto p-6 shadow-2xl relative overflow-y-auto flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
+                      Schedule Maintenance for {selectedVehicle}
+                    </h3>
+                    <p className="text-xs text-slate-400 font-semibold mb-4 uppercase">
+                      {selectedIssue}
+                    </p>
 
-                  <form onSubmit={handleConfirmSchedule} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
-                        Select Maintenance Date
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={scheduleDate}
-                        onChange={(e) => setScheduleDate(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                      />
-                    </div>
+                    <form onSubmit={handleConfirmSchedule} className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
+                          Select Maintenance Date
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
-                        Assign Maintenance Technician
-                      </label>
-                      <select
-                        value={selectedTechnician}
-                        onChange={(e) => setSelectedTechnician(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                      >
-                        <option value="Auto-assign">Auto-assign (Fastest Response)</option>
-                        <option value="Technician A">Technician A (HV Certified)</option>
-                        <option value="Technician B">Technician B (BMS Specialist)</option>
-                      </select>
-                    </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-1.5">
+                          Assign Maintenance Technician
+                        </label>
+                        <select
+                          value={selectedTechnician}
+                          onChange={(e) => setSelectedTechnician(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-xs rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                        >
+                          <option value="Auto-assign">Auto-assign (Fastest Response)</option>
+                          <option value="Technician A">Technician A (HV Certified)</option>
+                          <option value="Technician B">Technician B (BMS Specialist)</option>
+                        </select>
+                      </div>
 
-                    <div className="flex gap-2.5 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsModalOpen(false)}
-                        className="flex-1 py-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-emerald-950/20 cursor-pointer text-center font-bold"
-                      >
-                        Confirm Schedule
-                      </button>
-                    </div>
-                  </form>
+                      <div className="flex flex-col sm:flex-row gap-2.5 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsModalOpen(false)}
+                          className="w-full py-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center"
+                          style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-emerald-950/20 cursor-pointer text-center font-bold"
+                          style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          Confirm Schedule
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             )}
@@ -2863,6 +2992,7 @@
         const [currentTime, setCurrentTime] = useState(new Date());
         const [vehicles, setVehicles] = useState(vehicleHealthData);
         const [preSelectedVehicle, setPreSelectedVehicle] = useState('Select Vehicle');
+        const [sidebarOpen, setSidebarOpen] = useState(false);
 
         useEffect(() => {
           window.switchStandaloneTab = (tabName, vehicleId) => {
@@ -3584,20 +3714,40 @@
         ];
 
         return (
-          <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans">
+          <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans overflow-x-hidden">
             
+            {/* SIDEBAR OVERLAY (Mobile) */}
+            {sidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+
             {/* SIDEBAR */}
-            <aside className="hidden md:flex md:w-64 flex-col fixed inset-y-0 left-0 glass-panel border-r border-slate-800/60 z-30">
-              <div className="p-6 flex items-center gap-3 border-b border-slate-800/40">
-                <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
-                  <Icons.Cpu />
+            <aside className={`fixed inset-y-0 left-0 w-64 flex flex-col glass-panel border-r border-slate-800/60 z-50 transition-transform duration-300 md:translate-x-0 ${
+              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}>
+              <div className="p-6 flex items-center justify-between border-b border-slate-800/40">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
+                    <Icons.Cpu />
+                  </div>
+                  <div>
+                    <h1 className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                      Tata InnoVent
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Edge AI Diagnostics</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
-                    Tata InnoVent
-                  </h1>
-                  <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Edge AI Diagnostics</p>
-                </div>
+                {/* Close Button (Mobile Only) */}
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="md:hidden p-2 rounded-lg bg-slate-850 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                  style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✕
+                </button>
               </div>
 
               <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -3608,12 +3758,16 @@
                     <button
                       key={item.name}
                       id={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                      onClick={() => setActiveTab(item.name)}
+                      onClick={() => {
+                        setActiveTab(item.name);
+                        setSidebarOpen(false); // Auto close drawer on click
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                         isActive
                           ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/5 text-emerald-400 border-l-4 border-emerald-400 shadow-inner'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
                       }`}
+                      style={{ minHeight: '44px' }}
                     >
                       <Icon />
                       {item.name}
@@ -3632,60 +3786,101 @@
             <div className="flex-1 md:pl-64 flex flex-col min-w-0">
               
               {/* TOP BAR */}
-              <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-6 py-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="md:hidden p-2 bg-emerald-500 rounded-lg mr-2">
-                    <Icons.Cpu />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                      EV Battery Intelligence
-                      <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2.5 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/30 animate-badge-glow">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse shadow-[0_0_8px_rgba(0,255,128,0.8)]"></span>
-                        TELEMETRY ACTIVE
-                      </span>
-                    </h2>
-                    <p className="text-xs text-slate-400 hidden sm:block">Real-time battery pack diagnostics and edge prediction</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
+              <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                
+                {/* Row 1: Hamburger & Title (Mobile) / Single Row Left (Desktop) */}
+                <div className="flex items-center justify-between w-full md:w-auto">
                   <div className="flex items-center gap-2">
-                    <span id="badge-critical" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-900/60 rounded-full animate-pulse-subtle">
-                      <Icons.AlertOctagon />
-                      {criticalAlertsCount} critical
-                    </span>
-                    <span id="badge-warning" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-900/60 rounded-full">
-                      <Icons.AlertTriangle />
-                      {warningAlertsCount} warnings
-                    </span>
+                    {/* Hamburger menu button */}
+                    <button
+                      onClick={() => setSidebarOpen(true)}
+                      className="md:hidden p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                      style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <span className="text-xl font-bold">☰</span>
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                      <div className="hidden max-md:flex p-2 bg-emerald-500 rounded-lg">
+                        <Icons.Cpu />
+                      </div>
+                      <div>
+                        <h2 className="text-sm sm:text-base md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                          EV Battery Intelligence
+                          <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2.5 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/30 animate-badge-glow">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse shadow-[0_0_8px_rgba(0,255,128,0.8)]"></span>
+                            ACTIVE
+                          </span>
+                        </h2>
+                        <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Real-time diagnostics & AI forecasts</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="h-8 w-px bg-slate-800/80 hidden sm:block"></div>
-
-                  <div className="flex items-center gap-3">
+                  {/* Actions on Mobile (Refresh/Bell) */}
+                  <div className="flex items-center gap-2 md:hidden">
                     <button 
-                      id="btn-refresh"
                       onClick={handleTriggerTelemetryRefresh}
                       className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                      style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Force Telemetry Sync"
                     >
                       <Icons.RefreshCw />
                     </button>
                     
-                    <div className="relative">
-                      <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors">
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                        <Icons.Bell />
+                    <button 
+                      className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                      style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Icons.Bell />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Row 2: Status badges + Clock (Mobile) / Actions on Right (Desktop) */}
+                <div className="flex items-center justify-between w-full md:w-auto border-t border-slate-800/40 pt-3 md:pt-0 md:border-t-0 flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <span id="badge-critical" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-900/60 rounded-full animate-pulse-subtle">
+                      🔴 <span className="hidden sm:inline">{criticalAlertsCount} critical</span>
+                    </span>
+                    <span id="badge-warning" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-900/60 rounded-full">
+                      🟡 <span className="hidden sm:inline">{warningAlertsCount} warnings</span>
+                    </span>
+                  </div>
+
+                  <div className="h-8 w-px bg-slate-800/80 hidden md:block"></div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Desktop-only Sync/Bell */}
+                    <div className="hidden md:flex items-center gap-3">
+                      <button 
+                        id="btn-refresh"
+                        onClick={handleTriggerTelemetryRefresh}
+                        className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                        style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Force Telemetry Sync"
+                      >
+                        <Icons.RefreshCw />
                       </button>
+                      
+                      <div className="relative">
+                        <button 
+                          className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                          style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                          <Icons.Bell />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* DOWNLOAD REPORT DROPDOWN BUTTON */}
-                    <div className="relative" ref={dropdownRef}>
+                    {/* DOWNLOAD REPORT DROPDOWN BUTTON (Hidden on Mobile, shown in Settings instead) */}
+                    <div className="relative hidden md:block" ref={dropdownRef}>
                       <button
                         onClick={() => setShowDropdown(!showDropdown)}
                         disabled={isDownloading}
                         className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-850 text-xs font-bold text-slate-200 hover:text-white border border-slate-700/50 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed animate-fade-in"
+                        style={{ minHeight: '44px' }}
                       >
                         {isDownloading ? (
                           <svg className="animate-spin h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24">
@@ -3718,12 +3913,9 @@
                       )}
                     </div>
 
-                    <div className="hidden lg:block text-right">
-                      <p className="text-[10px] text-slate-500 uppercase font-semibold">Last Telemetry</p>
-                      <p className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-                        <Icons.Clock />
-                        {formatTimestamp(currentTime)}
-                      </p>
+                    <div className="text-right flex items-center gap-1 font-mono text-[10px] text-slate-400 bg-slate-900/50 border border-slate-800 px-2.5 py-1.5 rounded-xl">
+                      <Icons.Clock className="w-3 h-3 text-emerald-400" />
+                      <span>{formatTimestamp(currentTime)}</span>
                     </div>
                   </div>
                 </div>
@@ -3780,6 +3972,8 @@
                     settings={settings}
                     setSettings={setSettings}
                     setToast={setToast}
+                    handleExportPDF={handleExportPDF}
+                    handleExportCSV={handleExportCSV}
                   />
                 )}
               </div>

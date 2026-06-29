@@ -42,6 +42,15 @@ export default function Layout({
 }) {
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [isDownloading, setIsDownloading] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -504,20 +513,39 @@ export default function Layout({
   const ev3 = vehicles.find(v => v.id === 'EV-003');
 
   return (
-    <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans">
+    <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans overflow-x-hidden">
       
+      {/* SIDEBAR OVERLAY FOR MOBILE */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 md:hidden"
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="hidden md:flex md:w-64 flex-col fixed inset-y-0 left-0 glass-panel border-r border-slate-800/60 z-30">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800/40">
-          <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
-            <Cpu className="w-6 h-6 text-[#070b14]" />
+      <aside className={`w-64 flex flex-col fixed inset-y-0 left-0 glass-panel border-r border-slate-800/60 z-40 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0`}>
+        <div className="p-6 flex items-center justify-between border-b border-slate-800/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
+              <Cpu className="w-6 h-6 text-[#070b14]" />
+            </div>
+            <div>
+              <h1 className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                Tata InnoVent
+              </h1>
+              <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Edge AI Diagnostics</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
-              Tata InnoVent
-            </h1>
-            <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Edge AI Diagnostics</p>
-          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 cursor-pointer"
+            style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -528,6 +556,7 @@ export default function Layout({
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 id={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                   isActive
@@ -552,101 +581,172 @@ export default function Layout({
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">
         
         {/* TOP BAR */}
-        <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="md:hidden p-2 bg-emerald-500 rounded-lg mr-2">
-              <Cpu className="w-5 h-5 text-black" />
+        <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          {/* DESKTOP TOPBAR HEADER */}
+          <div className="hidden md:flex items-center justify-between w-full gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
+                <Cpu className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  EV Battery Intelligence
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2.5 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/30 animate-badge-glow">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse shadow-[0_0_8px_rgba(0,255,128,0.8)]"></span>
+                    TELEMETRY ACTIVE
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">Real-time battery pack diagnostics and edge prediction</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                EV Battery Intelligence
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2.5 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/30 animate-badge-glow">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse shadow-[0_0_8px_rgba(0,255,128,0.8)]"></span>
-                  TELEMETRY ACTIVE
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span id="badge-critical" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-900/60 rounded-full animate-pulse-subtle">
+                  <AlertOctagon className="w-3.5 h-3.5" />
+                  {criticalAlertsCount} critical
                 </span>
-              </h2>
-              <p className="text-xs text-slate-400 hidden sm:block">Real-time battery pack diagnostics and edge prediction</p>
+                <span id="badge-warning" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-900/60 rounded-full">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {warningAlertsCount} warnings
+                </span>
+              </div>
+
+              <div className="h-8 w-px bg-slate-800/80 hidden sm:block"></div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  id="btn-refresh"
+                  onClick={handleTriggerTelemetryRefresh}
+                  className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors cursor-pointer"
+                  title="Force Telemetry Sync"
+                  style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                
+                <div className="relative">
+                  <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors cursor-pointer" style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                    <Bell className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* DOWNLOAD REPORT DROPDOWN BUTTON */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    disabled={isDownloading}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-850 text-xs font-bold text-slate-200 hover:text-white border border-slate-700/50 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed"
+                    style={{ minHeight: '44px' }}
+                  >
+                    {isDownloading ? (
+                      <svg className="animate-spin h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : (
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                    <span>{isDownloading ? 'Downloading...' : 'Download Report'}</span>
+                  </button>
+
+                  {showDropdown && (
+                    <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-800 bg-[#0c1220]/95 backdrop-blur shadow-2xl z-50 p-1.5 space-y-1">
+                      <button
+                        onClick={handleExportPDF}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
+                        style={{ minHeight: '44px' }}
+                      >
+                        <FileDown className="w-3.5 h-3.5 text-red-400" />
+                        <span>Export as PDF</span>
+                      </button>
+                      <button
+                        onClick={handleExportCSV}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
+                        style={{ minHeight: '44px' }}
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Export as CSV</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 uppercase font-semibold">Last Telemetry</p>
+                  <p className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-emerald-500" />
+                    {formatTimestamp(currentTime)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span id="badge-critical" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-900/60 rounded-full animate-pulse-subtle">
-                <AlertOctagon className="w-3.5 h-3.5" />
-                {criticalAlertsCount} critical
-              </span>
-              <span id="badge-warning" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-900/60 rounded-full">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                {warningAlertsCount} warnings
-              </span>
+          {/* MOBILE TOPBAR HEADER */}
+          <div className="flex flex-col md:hidden w-full gap-3">
+            {/* ROW 1: Hamburger + Title + Bell */}
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="p-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 cursor-pointer"
+                  style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+                <h2 className="text-sm font-extrabold text-white tracking-tight uppercase">
+                  EV Battery Intelligence
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleTriggerTelemetryRefresh}
+                  className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 cursor-pointer"
+                  style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                <div className="relative">
+                  <button 
+                    className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 cursor-pointer"
+                    style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                    <Bell className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="h-8 w-px bg-slate-800/80 hidden sm:block"></div>
+            {/* ROW 2: TELEMETRY ACTIVE badge + critical/warning badges + clock */}
+            <div className="flex items-center justify-between w-full gap-2 pt-2.5 border-t border-slate-800/40">
+              <span className="inline-flex items-center gap-1.5 text-[9px] uppercase font-mono px-2 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/20 animate-badge-glow">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse"></span>
+                ACTIVE
+              </span>
 
-            <div className="flex items-center gap-3">
-              <button 
-                id="btn-refresh"
-                onClick={handleTriggerTelemetryRefresh}
-                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
-                title="Force Telemetry Sync"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-              
-              <div className="relative">
-                <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors">
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                  <Bell className="w-4 h-4" />
-                </button>
+              <div className="flex items-center gap-1.5">
+                <span id="badge-critical-mobile" className="flex items-center gap-0.5 text-[10px] font-extrabold px-2 py-0.5 bg-red-950/40 text-red-400 border border-red-900/40 rounded-full animate-pulse-subtle">
+                  {criticalAlertsCount} 🔴
+                </span>
+                <span id="badge-warning-mobile" className="flex items-center gap-0.5 text-[10px] font-extrabold px-2 py-0.5 bg-amber-950/40 text-amber-400 border border-amber-900/40 rounded-full">
+                  {warningAlertsCount} 🟡
+                </span>
               </div>
 
-              {/* DOWNLOAD REPORT DROPDOWN BUTTON */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  disabled={isDownloading}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-850 text-xs font-bold text-slate-200 hover:text-white border border-slate-700/50 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? (
-                    <svg className="animate-spin h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  ) : (
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                  <span>{isDownloading ? 'Downloading...' : 'Download Report'}</span>
-                </button>
-
-                {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-800 bg-[#0c1220]/95 backdrop-blur shadow-2xl z-50 p-1.5 space-y-1">
-                    <button
-                      onClick={handleExportPDF}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
-                    >
-                      <FileDown className="w-3.5 h-3.5 text-red-400" />
-                      <span>Export as PDF</span>
-                    </button>
-                    <button
-                      onClick={handleExportCSV}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Export as CSV</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="hidden lg:block text-right">
-                <p className="text-[10px] text-slate-500 uppercase font-semibold">Last Telemetry</p>
-                <p className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+              <div className="text-right">
+                <p className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
                   <Clock className="w-3 h-3 text-emerald-500" />
                   {formatTimestamp(currentTime)}
                 </p>
               </div>
             </div>
           </div>
+
         </header>
 
         {/* Content Outlet with smooth route transition class */}
@@ -665,7 +765,9 @@ export default function Layout({
             criticalAlertsCount,
             warningAlertsCount,
             recommendations,
-            setRecommendations
+            setRecommendations,
+            handleExportPDF,
+            handleExportCSV
           }} />
         </div>
       </div>
@@ -673,7 +775,9 @@ export default function Layout({
       {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
       {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
       {showWarning && ev3 && (() => {
-        const radius = 54;
+        const svgSize = isMobile ? 100 : 140;
+        const radius = isMobile ? 38 : 54;
+        const center = svgSize / 2;
         const circumference = 2 * Math.PI * radius;
         const strokeDashoffset = circumference - (countdown / 30) * circumference;
 
@@ -711,36 +815,36 @@ export default function Layout({
         }
 
         return (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 transition-all duration-300">
-            <div className={`bg-[#121824] border-2 rounded-3xl max-w-md w-full p-6 shadow-2xl transition-all duration-300 ${popupBorderClass}`}>
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-0 sm:p-4 transition-all duration-300">
+            <div className={`bg-[#121824] border-2 rounded-none sm:rounded-3xl max-w-md w-full h-full sm:h-auto p-5 sm:p-6 shadow-2xl transition-all duration-300 overflow-y-auto flex flex-col justify-between ${popupBorderClass}`}>
               
               {/* Countdown Display */}
-              <div className="flex flex-col items-center justify-center mb-5 mt-2">
-                <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2">
+              <div className="flex flex-col items-center justify-center mb-4 sm:mb-5 mt-2">
+                <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2">
                   CRITICAL RESPONSE REQUIRED WITHIN
                 </p>
                 
                 <div className="relative flex items-center justify-center">
-                  <svg width="140" height="140" viewBox="0 0 140 140" className="drop-shadow-lg">
+                  <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`} className="drop-shadow-lg">
                     {/* Background ring */}
-                    <circle cx="70" cy="70" r={radius}
-                      fill="none" stroke="#1a2332" strokeWidth="8" />
+                    <circle cx={center} cy={center} r={radius}
+                      fill="none" stroke="#1a2332" strokeWidth="6" />
                     {/* Countdown ring */}
-                    <circle cx="70" cy="70" r={radius}
-                      fill="none" stroke={ringColor} strokeWidth="8"
+                    <circle cx={center} cy={center} r={radius}
+                      fill="none" stroke={ringColor} strokeWidth="6"
                       strokeDasharray={circumference}
                       strokeDashoffset={strokeDashoffset}
                       strokeLinecap="round"
-                      transform="rotate(-90 70 70)"
+                      transform={`rotate(-90 ${center} ${center})`}
                       style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
                     />
                     {/* Countdown number in center */}
                     <text 
-                      x="70" 
-                      y="70" 
+                      x={center} 
+                      y={center} 
                       textAnchor="middle" 
                       dominantBaseline="middle"
-                      fontSize="36" 
+                      fontSize={isMobile ? "26" : "36"} 
                       fontWeight="black" 
                       fill={ringColor}
                       className={`font-mono transition-all duration-300 ${countdown <= 5 ? 'animate-flash-red text-red-500' : ''}`}
@@ -750,16 +854,16 @@ export default function Layout({
                   </svg>
                 </div>
                 
-                <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-2">
+                <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-2">
                   SECONDS
                 </p>
               </div>
 
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-black text-red-500 tracking-wide uppercase">
+              <div className="text-center mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-black text-red-500 tracking-wide uppercase">
                   {isAutoIsolating ? "⚠ NO RESPONSE DETECTED — AUTO ISOLATING" : "⚠ THERMAL RUNAWAY RISK — EV-003"}
                 </h2>
-                <p className="text-xs text-slate-400 font-bold tracking-wider uppercase mt-1">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-bold tracking-wider uppercase mt-1">
                   {isAutoIsolating ? "Safety isolation protocol initiated" : "Immediate intervention required"}
                 </p>
               </div>
@@ -805,7 +909,7 @@ export default function Layout({
                   </div>
                 )}
 
-                <ResponsiveContainer width="100%" height={120}>
+                <ResponsiveContainer width="100%" height={isMobile ? 80 : 120}>
                   <LineChart data={tempHistory} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <XAxis
                       dataKey="time"
@@ -860,6 +964,7 @@ export default function Layout({
                 <button
                   onClick={handleIsolateVehicleClick}
                   className={`w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-red-950/20 ${countdownActive ? 'animate-pulsing-border border-red-500' : ''}`}
+                  style={{ minHeight: '44px' }}
                 >
                   Isolate Vehicle
                 </button>
@@ -867,6 +972,7 @@ export default function Layout({
                   onClick={handleAlertTechnicianClick}
                   disabled={isNotifying}
                   className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/60 text-slate-950 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2"
+                  style={{ minHeight: '44px' }}
                 >
                   {isNotifying && (
                     <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
@@ -879,6 +985,7 @@ export default function Layout({
                 <button
                   onClick={handleDismissWarningClick}
                   className="w-full py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/30 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors"
+                  style={{ minHeight: '44px' }}
                 >
                   Dismiss Warning
                 </button>

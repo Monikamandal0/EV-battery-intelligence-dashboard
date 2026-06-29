@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Sliders, Shield, Info, ToggleLeft, ToggleRight, Check } from 'lucide-react';
+import { Sliders, Shield, Info, ToggleLeft, ToggleRight, Check, FileDown, FileSpreadsheet } from 'lucide-react';
 
 const Skeleton = ({ width = '100%', height = '20px', borderRadius = '6px', circle = false }) => (
   <div className="skeleton" style={{
@@ -57,7 +57,7 @@ const SettingsSkeleton = () => (
 );
 
 export default function Settings() {
-  const { settings, setSettings, setToast } = useOutletContext();
+  const { settings, setSettings, setToast, handleExportPDF, handleExportCSV } = useOutletContext();
 
   const [pageLoading, setPageLoading] = useState(true);
   const [pageOpacity, setPageOpacity] = useState(0);
@@ -235,7 +235,7 @@ export default function Settings() {
 
         {/* Right Column - Diagnostics info */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between h-full space-y-6">
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <Info className="w-4 h-4 text-emerald-400" />
@@ -263,11 +263,41 @@ export default function Settings() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold uppercase tracking-wider text-xs rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold uppercase tracking-wider text-xs rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              style={{ minHeight: '44px' }}
             >
               <Check className="w-4 h-4" />
               Save Settings
             </button>
+          </div>
+
+          {/* Download Report Card */}
+          <div className="glass-card p-6 rounded-2xl space-y-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <FileDown className="w-4 h-4 text-emerald-400" />
+              Download Report Panel
+            </h3>
+            <p className="text-xs text-slate-400">Export active fleet diagnostic data as CSV or PDF report format</p>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                className="w-full py-2.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 border border-red-900/60 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                style={{ minHeight: '44px' }}
+              >
+                <FileDown className="w-4 h-4 text-red-400" />
+                <span>Export PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="w-full py-2.5 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 border border-emerald-900/60 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                style={{ minHeight: '44px' }}
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
         </div>
 

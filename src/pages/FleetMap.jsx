@@ -89,6 +89,13 @@ export default function FleetMap() {
 
   const [pageLoading, setPageLoading] = useState(true);
   const [pageOpacity, setPageOpacity] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -178,35 +185,37 @@ export default function FleetMap() {
       </div>
 
       {/* Stats and Controls Row */}
-      <div className="flex justify-between items-center gap-4 flex-wrap">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         
         {/* Quick stat pills */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="px-3.5 py-1.5 bg-slate-900 border border-slate-800/80 rounded-full text-xs font-bold text-slate-300">
-            📍 {vehicles.length} Vehicles Tracked
+        <div className="flex gap-2 items-center overflow-x-auto w-full lg:w-auto pb-2.5 sm:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <span className="shrink-0 px-3.5 py-1.5 bg-slate-900 border border-slate-800/80 rounded-full text-xs font-bold text-slate-300">
+            📍 {vehicles.length} Vehicles
           </span>
-          <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold">
+          <span className="shrink-0 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold">
             🟢 {healthyCount} Healthy
           </span>
-          <span className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold">
+          <span className="shrink-0 px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold">
             🟡 {warningCount} Warning
           </span>
-          <span className="px-3.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-bold">
+          <span className="shrink-0 px-3.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-bold">
             🔴 {criticalCount} Critical
           </span>
         </div>
 
         {/* Map controls buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
           <button
             onClick={handleFitAll}
-            className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/40 rounded-xl text-xs font-bold transition-colors"
+            className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/40 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Fit All Vehicles
           </button>
           <button
             onClick={handleCenterOnCritical}
-            className="py-2 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors animate-pulse-glow"
+            className="w-full sm:w-auto py-2.5 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors animate-pulse-glow cursor-pointer"
+            style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Center on Critical
           </button>
@@ -214,7 +223,7 @@ export default function FleetMap() {
       </div>
 
       {/* Leaflet Map Area */}
-      <div className="flex-1 w-full rounded-2xl border border-slate-800/60 overflow-hidden relative min-h-[500px] z-10 shadow-inner">
+      <div className="w-full rounded-2xl border border-slate-800/60 overflow-hidden relative z-10 shadow-inner flex-1 min-h-[400px] md:min-h-[500px]">
         <MapContainer
           center={[20.5937, 78.9629]} // Center of India
           zoom={5}
@@ -249,7 +258,7 @@ export default function FleetMap() {
               >
                 {/* Custom dark-themed popup */}
                 <Popup>
-                  <div className="w-[220px] p-1 space-y-3 text-slate-200">
+                  <div className="w-full max-w-[200px] sm:w-[220px] max-h-[250px] overflow-y-auto p-1 space-y-3 text-slate-200">
                     <div className="flex justify-between items-center">
                       <span className="text-base font-black text-white">{v.id}</span>
                       <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${

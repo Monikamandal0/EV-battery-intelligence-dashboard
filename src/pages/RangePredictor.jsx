@@ -260,16 +260,18 @@ export default function RangePredictor() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-800/40">
+          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-slate-800/40">
             <button
               onClick={handleReset}
-              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/40 transition-colors"
+              className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/40 transition-colors"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               Reset Defaults
             </button>
             <button
               onClick={handleApplyToFleet}
-              className="py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors"
+              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-colors"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               Apply to Fleet
             </button>
@@ -313,7 +315,7 @@ export default function RangePredictor() {
           <div className="glass-card p-6 rounded-2xl">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Active Fleet Range Side-by-Side</h3>
             
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 uppercase text-[9px] tracking-wider">

@@ -91,6 +91,14 @@ export default function ChargeHistory() {
   const [filterVehicle, setFilterVehicle] = useState('ALL');
   const [pageLoading, setPageLoading] = useState(true);
   const [pageOpacity, setPageOpacity] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showAllColumns, setShowAllColumns] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -120,12 +128,13 @@ export default function ChargeHistory() {
         </div>
 
         {/* Filter Dropdown */}
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 self-start">
+        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 w-full sm:w-auto">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <select
             value={filterVehicle}
             onChange={(e) => setFilterVehicle(e.target.value)}
-            className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer"
+            className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer w-full"
+            style={{ minHeight: '44px' }}
           >
             <option value="ALL">All Vehicles</option>
             {vehicles.map(v => (
@@ -145,7 +154,7 @@ export default function ChargeHistory() {
             <p className="text-xs text-slate-400 mt-1">Weekly counts per vehicle</p>
           </div>
           
-          <div className="h-64 w-full">
+          <div className="w-full" style={{ height: isMobile ? '180px' : '256px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chargeFrequencyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -169,7 +178,7 @@ export default function ChargeHistory() {
             <p className="text-xs text-slate-400 mt-1">DC Fast vs. AC Slow duration profiles (minutes)</p>
           </div>
           
-          <div className="h-64 w-full">
+          <div className="w-full" style={{ height: isMobile ? '200px' : '256px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={avgDurationTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -193,43 +202,74 @@ export default function ChargeHistory() {
           <p className="text-xs text-slate-400 mt-1">Chronological history index of fleet grid connections</p>
         </div>
 
-        <div className="overflow-x-auto mt-4">
+        <div className="overflow-x-auto mt-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-800/60 text-slate-400 uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4 font-semibold">Date</th>
+                {!(isMobile && !showAllColumns) && <th className="py-3 px-4 font-semibold">Date</th>}
                 <th className="py-3 px-4 font-semibold">Vehicle</th>
-                <th className="py-3 px-4 font-semibold text-center">Start SoC</th>
-                <th className="py-3 px-4 font-semibold text-center">End SoC</th>
-                <th className="py-3 px-4 font-semibold text-center">Duration</th>
-                <th className="py-3 px-4 font-semibold text-center">Energy Added</th>
-                <th className="py-3 px-4 font-semibold text-center">Charger Type</th>
+                {!(isMobile && !showAllColumns) && (
+                  <>
+                    <th className="py-3 px-4 font-semibold text-center">Start SoC</th>
+                    <th className="py-3 px-4 font-semibold text-center">End SoC</th>
+                    <th className="py-3 px-4 font-semibold text-center">Duration</th>
+                    <th className="py-3 px-4 font-semibold text-center">Energy Added</th>
+                  </>
+                )}
+                {isMobile && !showAllColumns && (
+                  <th className="py-3 px-4 font-semibold text-center">SOH%</th>
+                )}
+                <th className="py-3 px-4 font-semibold text-center">{isMobile && !showAllColumns ? 'Status' : 'Charger Type'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="py-3.5 px-4 font-medium flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    {log.date}
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-slate-200">{log.vehicle}</td>
-                  <td className="py-3.5 px-4 text-center font-mono">{log.start}%</td>
-                  <td className="py-3.5 px-4 text-center font-mono">{log.end}%</td>
-                  <td className="py-3.5 px-4 text-center font-mono text-slate-300">{log.duration} mins</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-400 font-mono">+{log.energy} kWh</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                      log.type === 'DC Fast' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}>
-                      {log.type}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {filteredLogs.map((log) => {
+                const showThree = isMobile && !showAllColumns;
+                return (
+                  <tr key={log.id} className="hover:bg-slate-800/20 transition-colors">
+                    {!showThree && (
+                      <td className="py-3.5 px-4 font-medium flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        {log.date}
+                      </td>
+                    )}
+                    <td className="py-3.5 px-4 font-bold text-slate-200">{log.vehicle}</td>
+                    {!showThree && (
+                      <>
+                        <td className="py-3.5 px-4 text-center font-mono">{log.start}%</td>
+                        <td className="py-3.5 px-4 text-center font-mono">{log.end}%</td>
+                        <td className="py-3.5 px-4 text-center font-mono text-slate-300">{log.duration} mins</td>
+                        <td className="py-3.5 px-4 text-center font-bold text-emerald-400 font-mono">+{log.energy} kWh</td>
+                      </>
+                    )}
+                    {showThree && (
+                      <td className="py-3.5 px-4 text-center font-mono text-slate-200 font-bold">{log.end}%</td>
+                    )}
+                    <td className="py-3.5 px-4 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        log.type === 'DC Fast' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {log.type}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
+
+        {isMobile && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setShowAllColumns(!showAllColumns)}
+              className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {showAllColumns ? 'Show Less' : 'Show More'}
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
