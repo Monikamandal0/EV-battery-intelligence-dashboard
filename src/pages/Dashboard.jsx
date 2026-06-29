@@ -163,6 +163,7 @@ export default function Dashboard() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [opacity, setOpacity] = useState(0);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
