@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Activity, AlertOctagon, AlertTriangle, Battery, BatteryCharging, Clock,
-  Compass, RefreshCw, Sliders, Thermometer, Zap, ShieldAlert, Cpu, Wrench
+  Compass, RefreshCw, Sliders, Thermometer, Zap, ShieldAlert, Cpu, wrench
 } from 'lucide-react';
 import {
   degradationData,

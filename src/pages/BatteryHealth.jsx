@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadialBarChart, RadialBar, PolarAngleAxis
 } from 'recharts';
-import { Thermometer, AlertTriangle, CheckCircle, Wrench, ShieldAlert } from 'lucide-react';
+import { Thermometer, AlertTriangle, CheckCircle, Wrench, ShieldAlert, Battery } from 'lucide-react';
 
 const Skeleton = ({ width = '100%', height = '20px', borderRadius = '6px', circle = false }) => (
   <div className="skeleton" style={{

@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import {
-  Wrench, AlertOctagon, AlertTriangle, ShieldAlert, Zap,
+  Wrench, Battery, AlertOctagon, AlertTriangle, ShieldAlert, Zap,
   Thermometer, Cpu, Download, FileSpreadsheet, FileDown,
   Clock, DollarSign, Calendar, CheckCircle, Play, Eye
 } from 'lucide-react';
