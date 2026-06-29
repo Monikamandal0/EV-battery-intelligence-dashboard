@@ -1,0 +1,3117 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="EV Battery Intelligence Dashboard - High-fidelity telemetry monitoring, range prediction, and health diagnostics." />
+    <title>EV Battery Intelligence - Standalone Fleet Diagnostics</title>
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dependencies via CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <!-- Leaflet CDN for Interactive Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- PapaParse CDN for CSV Export -->
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- jsPDF CDN for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.autotable.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              dark: {
+                bg: '#080d1a',
+                card: '#151c2c',
+                border: '#1f293d',
+                hover: '#243049'
+              },
+              ev: {
+                healthy: '#10b981',
+                warning: '#f59e0b',
+                critical: '#ef4444',
+                info: '#3b82f6',
+              }
+            },
+            fontFamily: {
+              sans: ['Outfit', 'Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        background-color: #080d1a;
+        color: #e2e8f0;
+        overflow-x: hidden;
+      }
+      .glass-panel {
+        background: rgba(21, 28, 44, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .glass-card {
+        background: rgba(21, 28, 44, 0.55);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .glass-card:hover {
+        background: rgba(21, 28, 44, 0.85);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.6);
+        transform: translateY(-2px);
+      }
+      .glow-green { box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.15); }
+      .glow-blue { box-shadow: 0 0 15px -3px rgba(59, 130, 246, 0.15); }
+      .glow-yellow { box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.15); }
+      .glow-red { box-shadow: 0 0 15px -3px rgba(239, 68, 68, 0.15); }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(11, 15, 25, 0.5);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      /* Pulse Animations */
+      @keyframes pulse-subtle {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.82; transform: scale(0.99); }
+      }
+      .animate-pulse-subtle {
+        animation: pulse-subtle 3s infinite ease-in-out;
+      }
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      .animate-pulse-glow {
+        animation: pulse-glow 2s infinite ease-in-out;
+      }
+
+      /* Badge animations */
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0.7); }
+        70% { box-shadow: 0 0 0 8px rgba(0, 255, 128, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0); }
+      }
+
+      @keyframes badge-glow {
+        0%, 100% {
+          border-color: rgba(16, 185, 129, 0.8);
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+        }
+        50% {
+          border-color: rgba(16, 185, 129, 0.25);
+          box-shadow: 0 0 2px rgba(16, 185, 129, 0.05);
+        }
+      }
+
+      .animate-badge-glow {
+        animation: badge-glow 4s infinite ease-in-out;
+      }
+
+      .animate-dot-pulse {
+        animation: pulse 1.5s infinite;
+      }
+      .edge-ai-icon svg {
+        width: 10px !important;
+        height: 10px !important;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      /* Custom Leaflet popup theme overlay matching dashboard */
+      .leaflet-popup-content-wrapper {
+        background: #111827 !important;
+        color: #f3f4f6 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7) !important;
+        padding: 4px !important;
+      }
+      .leaflet-popup-tip {
+        background: #111827 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      .leaflet-popup-close-button {
+        color: #9ca3af !important;
+        top: 8px !important;
+        right: 8px !important;
+      }
+      .leaflet-container {
+        font-family: inherit !important;
+      }
+      @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+      }
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          #1a2332 25%,
+          #243044 50%,
+          #1a2332 75%
+        );
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        border-radius: 6px;
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+      }
+      .animate-shake {
+        animation: shake 0.15s infinite;
+      }
+
+      @keyframes pulse-red {
+        0%, 100% { background-color: #121824; }
+        50% { background-color: rgba(239, 68, 68, 0.2); }
+      }
+      .animate-pulse-red {
+        animation: pulse-red 0.5s infinite;
+      }
+
+      @keyframes pulsing-border {
+        0%, 100% { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.6); }
+      }
+      .animate-pulsing-border {
+        animation: pulsing-border 1.5s infinite;
+      }
+
+      @keyframes flash-red {
+        0%, 100% { fill: #ef4444; opacity: 1; }
+        50% { fill: #ef4444; opacity: 0.15; }
+      }
+      .animate-flash-red {
+        animation: flash-red 0.3s infinite;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
+      const {
+        LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+        ResponsiveContainer, ComposedChart, RadialBarChart, RadialBar, PolarAngleAxis, ReferenceLine
+      } = window.Recharts;
+
+      const Skeleton = ({ width = '100%', height = '20px', borderRadius = '6px', circle = false }) => (
+        <div className="skeleton" style={{
+          width: circle ? height : width,
+          height,
+          borderRadius: circle ? '50%' : borderRadius,
+          marginBottom: '8px'
+        }} />
+      );
+
+      const DashboardSkeleton = () => (
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="glass-card p-5 rounded-2xl border border-slate-800/40 relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-4">
+                    <Skeleton width="65%" height="12px" />
+                    <Skeleton width="80%" height="24px" />
+                  </div>
+                  <Skeleton width="40px" height="40px" borderRadius="12px" />
+                </div>
+                <div className="mt-4">
+                  <Skeleton width="50%" height="12px" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 space-y-6">
+              <div className="glass-card p-6 rounded-2xl border border-slate-800/40">
+                <div className="flex justify-between items-center mb-6">
+                  <Skeleton width="30%" height="18px" />
+                  <Skeleton width="15%" height="18px" />
+                </div>
+                <Skeleton width="100%" height="320px" />
+              </div>
+
+              <div className="glass-card p-6 rounded-2xl border border-slate-800/40 space-y-4">
+                <Skeleton width="20%" height="18px" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-4 rounded-xl border border-slate-800/40 bg-slate-900/10">
+                      <div className="flex justify-between items-center mb-3">
+                        <Skeleton width="40%" height="14px" />
+                        <Skeleton width="30%" height="14px" />
+                      </div>
+                      <Skeleton width="80%" height="10px" />
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Skeleton width="80%" height="12px" />
+                        <Skeleton width="80%" height="12px" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="glass-card p-6 rounded-2xl border border-slate-800/40 h-[480px] flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center border-b border-slate-800/40 pb-2 mb-4">
+                    <Skeleton width="40%" height="16px" />
+                  </div>
+                  <div className="space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="p-3 rounded-xl border border-slate-800/40 bg-slate-900/10 flex items-start gap-3">
+                        <Skeleton width="16px" height="16px" circle={true} />
+                        <div className="flex-1">
+                          <Skeleton width="70%" height="10px" />
+                          <Skeleton width="90%" height="10px" />
+                        </div>
+                        <Skeleton width="30px" height="12px" borderRadius="10px" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      const BatteryHealthSkeleton = () => (
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div>
+            <Skeleton width="30%" height="24px" />
+            <Skeleton width="45%" height="14px" className="mt-1" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="glass-card p-6 rounded-3xl border border-slate-800/60 flex flex-col justify-between">
+                <div className="flex justify-between items-center mb-3">
+                  <Skeleton width="20%" height="14px" />
+                  <Skeleton width="15%" height="16px" borderRadius="10px" />
+                </div>
+
+                <div className="flex justify-center items-center py-4 relative">
+                  <div className="w-[180px] h-[100px] flex items-center justify-center overflow-hidden relative">
+                    <div className="w-[150px] h-[150px] rounded-full border-[16px] border-slate-800/50 absolute -bottom-[75px] skeleton animate-pulse" />
+                    <div className="absolute bottom-2 flex flex-col items-center">
+                      <Skeleton width="50px" height="24px" />
+                      <Skeleton width="70px" height="10px" className="mt-1" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 py-3 border-t border-b border-slate-800/40 mt-2 text-center">
+                  <div className="flex flex-col items-center"><Skeleton width="60%" height="8px" /><Skeleton width="40%" height="12px" className="mt-1.5" /></div>
+                  <div className="flex flex-col items-center"><Skeleton width="60%" height="8px" /><Skeleton width="40%" height="12px" className="mt-1.5" /></div>
+                  <div className="flex flex-col items-center"><Skeleton width="60%" height="8px" /><Skeleton width="40%" height="12px" className="mt-1.5" /></div>
+                </div>
+
+                <div className="space-y-2 mt-4 mb-4">
+                  <div className="flex justify-between"><Skeleton width="25%" height="10px" /><Skeleton width="15%" height="10px" /></div>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: 8 }).map((_, j) => (
+                      <div key={j} className="flex-1 h-6 rounded-md skeleton" />
+                    ))}
+                  </div>
+                </div>
+
+                <Skeleton width="100%" height="32px" borderRadius="12px" />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 glass-card p-6 rounded-2xl space-y-6">
+              <div className="flex justify-between items-center"><Skeleton width="30%" height="18px" /><Skeleton width="15%" height="24px" /></div>
+              <div className="grid grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-slate-800/40 bg-slate-900/10 flex flex-col items-center"><Skeleton width="40%" height="10px" /><Skeleton width="60%" height="18px" className="mt-2" /></div>
+                ))}
+              </div>
+            </div>
+            <div className="glass-card p-6 rounded-2xl"><Skeleton width="40%" height="18px" /><Skeleton width="100%" height="180px" className="mt-4" /></div>
+          </div>
+        </div>
+      );
+
+      const ChargeHistorySkeleton = () => (
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Skeleton width="40%" height="24px" />
+              <Skeleton width="60%" height="14px" className="mt-1" />
+            </div>
+            <Skeleton width="140px" height="32px" borderRadius="8px" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 glass-card p-6 rounded-2xl">
+              <Skeleton width="30%" height="18px" className="mb-6" />
+              <div className="h-[200px] flex items-end justify-between px-8 pt-4">
+                {[140, 180, 100, 160, 120, 150, 90].map((h, idx) => (
+                  <div key={idx} className="w-8 skeleton" style={{ height: `${h}px`, borderRadius: '4px 4px 0 0' }} />
+                ))}
+              </div>
+            </div>
+            <div className="glass-card p-6 rounded-2xl space-y-4">
+              <Skeleton width="50%" height="18px" />
+              <Skeleton width="100%" height="160px" />
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <Skeleton width="20%" height="18px" />
+              <Skeleton width="15%" height="18px" />
+            </div>
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-6 gap-4 pb-2 border-b border-slate-800/40">
+                {Array.from({ length: 6 }).map((_, j) => <Skeleton key={j} width="70%" height="12px" />)}
+              </div>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-6 gap-4 py-1.5">
+                  {Array.from({ length: 6 }).map((_, j) => <Skeleton key={j} width="85%" height="10px" />)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+
+      const RangePredictorSkeleton = () => (
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div>
+            <Skeleton width="30%" height="24px" />
+            <Skeleton width="50%" height="14px" className="mt-1" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 glass-card p-6 rounded-2xl space-y-6">
+              <Skeleton width="40%" height="18px" className="mb-4" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between"><Skeleton width="30%" height="12px" /><Skeleton width="15%" height="12px" /></div>
+                  <Skeleton width="100%" height="14px" borderRadius="10px" />
+                </div>
+              ))}
+            </div>
+
+            <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center">
+              <Skeleton width="180px" height="180px" circle={true} className="animate-pulse" />
+              <Skeleton width="50%" height="14px" className="mt-4" />
+              <Skeleton width="70%" height="10px" className="mt-2" />
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl">
+            <Skeleton width="20%" height="18px" className="mb-4" />
+            <div className="space-y-3">
+              <div className="grid grid-cols-4 gap-4 pb-2 border-b border-slate-800/40">
+                {Array.from({ length: 4 }).map((_, j) => <Skeleton key={j} width="60%" height="12px" />)}
+              </div>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-4 gap-4 py-1">
+                  {Array.from({ length: 4 }).map((_, j) => <Skeleton key={j} width="80%" height="10px" />)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+
+      const FleetMapSkeleton = () => (
+        <div className="p-6 space-y-6 overflow-hidden flex-1 flex flex-col h-full">
+          <div>
+            <Skeleton width="25%" height="24px" />
+            <Skeleton width="45%" height="14px" className="mt-1" />
+          </div>
+
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} width="120px" height="30px" borderRadius="15px" />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Skeleton width="120px" height="36px" borderRadius="10px" />
+              <Skeleton width="120px" height="36px" borderRadius="10px" />
+            </div>
+          </div>
+
+          <div className="flex-1 w-full rounded-2xl border border-slate-800/60 overflow-hidden relative min-h-[500px]">
+            <div className="w-full h-full skeleton" />
+            
+            <div className="absolute bottom-6 right-6 z-10 glass-panel bg-slate-950/80 border border-slate-800 p-4 rounded-xl space-y-3 w-[160px]">
+              <Skeleton width="80%" height="10px" />
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton width="10px" height="10px" circle={true} />
+                    <Skeleton width="70%" height="8px" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      const SettingsSkeleton = () => (
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div>
+            <Skeleton width="30%" height="24px" />
+            <Skeleton width="40%" height="14px" className="mt-1" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 glass-card p-6 rounded-2xl space-y-6">
+              <Skeleton width="40%" height="18px" className="mb-4" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton width="20%" height="12px" />
+                  <Skeleton width="100%" height="36px" borderRadius="8px" />
+                </div>
+              ))}
+              <div className="pt-4 space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div>
+                      <Skeleton width="150px" height="12px" />
+                      <Skeleton width="250px" height="10px" className="mt-1" />
+                    </div>
+                    <Skeleton width="45px" height="24px" borderRadius="12px" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass-card p-6 rounded-2xl space-y-6">
+              <Skeleton width="50%" height="18px" className="mb-4" />
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-slate-800/40 bg-slate-900/10 space-y-2">
+                    <Skeleton width="40%" height="12px" />
+                    <Skeleton width="90%" height="10px" />
+                    <Skeleton width="80%" height="10px" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      // Mock Data Definition
+      const degradationData = [
+        { month: 'Jul 25', 'EV-001': 99.2, 'EV-002': 98.5, 'EV-003': 97.8 },
+        { month: 'Aug 25', 'EV-001': 97.8, 'EV-002': 96.1, 'EV-003': 95.2 },
+        { month: 'Sep 25', 'EV-001': 96.0, 'EV-002': 93.8, 'EV-003': 91.5 },
+        { month: 'Oct 25', 'EV-001': 94.5, 'EV-002': 90.2, 'EV-003': 88.0 },
+        { month: 'Nov 25', 'EV-001': 93.1, 'EV-002': 87.5, 'EV-003': 82.4 },
+        { month: 'Dec 25', 'EV-001': 91.4, 'EV-002': 84.9, 'EV-003': 79.1 },
+        { month: 'Jan 26', 'EV-001': 89.8, 'EV-002': 81.3, 'EV-003': 73.5 },
+        { month: 'Feb 26', 'EV-001': 88.1, 'EV-002': 77.8, 'EV-003': 66.8 },
+        { month: 'Mar 26', 'EV-001': 86.5, 'EV-002': 73.2, 'EV-003': 58.4 },
+        { month: 'Apr 26', 'EV-001': 84.9, 'EV-002': 69.0, 'EV-003': 51.2 },
+        { month: 'May 26', 'EV-001': 83.2, 'EV-002': 64.8, 'EV-003': 44.9 },
+        { month: 'Jun 26', 'EV-001': 82.0, 'EV-002': 61.0, 'EV-003': 38.0 },
+      ];
+
+      const chargeCycleData = [
+        { day: 'Mon', cycles: 42, average: 45 },
+        { day: 'Tue', cycles: 48, average: 45 },
+        { day: 'Wed', cycles: 55, average: 45 },
+        { day: 'Thu', cycles: 39, average: 45 },
+        { day: 'Fri', cycles: 51, average: 45 },
+        { day: 'Sat', cycles: 34, average: 45 },
+        { day: 'Sun', cycles: 47, average: 45 },
+      ];
+
+      const vehicleHealthData = [
+        {
+          id: 'EV-001',
+          healthScore: 82,
+          status: 'healthy',
+          estimatedRange: 345,
+          lastCharged: '2 hours ago',
+          soc: 88,
+          temp: 34.2,
+          voltage: 398,
+          cycles: 184,
+        },
+        {
+          id: 'EV-002',
+          healthScore: 61,
+          status: 'warning',
+          estimatedRange: 256,
+          lastCharged: '45 mins ago',
+          soc: 72,
+          temp: 42.8,
+          voltage: 391,
+          cycles: 312,
+        },
+        {
+          id: 'EV-003',
+          healthScore: 38,
+          status: 'critical',
+          estimatedRange: 142,
+          lastCharged: '5 hours ago',
+          soc: 45,
+          temp: 49.5,
+          voltage: 368,
+          cycles: 428,
+        },
+        {
+          id: 'EV-004',
+          healthScore: 91,
+          status: 'healthy',
+          estimatedRange: 378,
+          lastCharged: '30 mins ago',
+          soc: 95,
+          temp: 31.2,
+          voltage: 402,
+          cycles: 64,
+        },
+      ];
+
+      const rangePredictionData = [
+        {
+          vehicle: 'EV-001',
+          batteryPercent: 88,
+          temperature: 34.2,
+          predictedRange: 345,
+          status: 'Optimal',
+          severity: 'success',
+        },
+        {
+          vehicle: 'EV-002',
+          batteryPercent: 72,
+          temperature: 42.8,
+          predictedRange: 256,
+          status: 'Thermal Advisory',
+          severity: 'warning',
+        },
+        {
+          vehicle: 'EV-003',
+          batteryPercent: 45,
+          temperature: 49.5,
+          predictedRange: 142,
+          status: 'Critical Degradation',
+          severity: 'error',
+        },
+        {
+          vehicle: 'EV-004',
+          batteryPercent: 95,
+          temperature: 29.8,
+          predictedRange: 405,
+          status: 'Optimal',
+          severity: 'success',
+        },
+        {
+          vehicle: 'EV-005',
+          batteryPercent: 60,
+          temperature: 31.5,
+          predictedRange: 228,
+          status: 'Optimal',
+          severity: 'success',
+        },
+      ];
+
+      const initialAlertsFeed = [
+        {
+          id: 'alt-1',
+          vehicle: 'EV-003',
+          message: 'Thermal Runaway Risk: Cell Group 4 exceeded 49°C',
+          severity: 'critical',
+          timestamp: '11:21:05',
+          type: 'thermal',
+        },
+        {
+          id: 'alt-2',
+          vehicle: 'EV-003',
+          message: 'Critical cell voltage drop: Cell #18 read 3.12V',
+          severity: 'critical',
+          timestamp: '11:18:42',
+          type: 'voltage',
+        },
+        {
+          id: 'alt-3',
+          vehicle: 'EV-002',
+          message: 'Charging anomaly: high contactor impedance detected',
+          severity: 'warning',
+          timestamp: '11:15:30',
+          type: 'charging',
+        },
+        {
+          id: 'alt-4',
+          vehicle: 'EV-002',
+          message: 'Thermal Advisory: Elevated pack cooling flow rate',
+          severity: 'warning',
+          timestamp: '10:58:12',
+          type: 'thermal',
+        },
+        {
+          id: 'alt-5',
+          vehicle: 'EV-001',
+          message: 'Regenerative braking torque restricted: battery temperature low',
+          severity: 'warning',
+          timestamp: '10:45:00',
+          type: 'charging',
+        },
+        {
+          id: 'alt-6',
+          vehicle: 'EV-004',
+          message: 'Charge cycle completed: 100% capacity balance achieved',
+          severity: 'info',
+          timestamp: '10:12:35',
+          type: 'nominal',
+        },
+        {
+          id: 'alt-7',
+          vehicle: 'EV-001',
+          message: 'State of Health (SoH) recalibrated to 82% after slow charge',
+          severity: 'info',
+          timestamp: '09:30:11',
+          type: 'nominal',
+        },
+      ];
+
+      // SVG Icon Components mapping
+      const Icons = {
+        Gauge: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+        ),
+        Battery: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></svg>
+        ),
+        History: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        ),
+        Compass: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        ),
+        MapPin: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        ),
+        Sliders: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+        ),
+        Cpu: () => (
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 15h3"/><path d="M1 9h3"/><path d="M1 15h3"/></svg>
+        ),
+        AlertOctagon: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+        ),
+        AlertTriangle: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        ),
+        Bell: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        ),
+        Clock: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ),
+        RefreshCw: () => (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+        ),
+        Thermometer: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+        ),
+        Zap: () => (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        ),
+        BatteryLarge: () => (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="16" height="10" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
+        ),
+        ShieldAlert: () => (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        ),
+        Download: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        ),
+        FileDown: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><polyline points="9 15 12 18 15 15"/></svg>
+        ),
+        FileSpreadsheet: () => (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><rect x="8" y="10" width="8" height="8" rx="1"/><path d="M8 14h8"/><path d="M12 10v8"/></svg>
+        )
+      };
+
+      const alertTemplates = [
+        { message: "Thermal Runaway Risk: Cell Group exceeded 49°C", severity: "critical", type: "thermal" },
+        { message: "Critical cell voltage drop detected", severity: "critical", type: "voltage" },
+        { message: "Charging anomaly: high impedance detected", severity: "warning", type: "charging" },
+        { message: "Pack temperature stabilizing", severity: "info", type: "nominal" },
+        { message: "SOH drop detected — service recommended", severity: "warning", type: "charging" }
+      ];
+
+      const getAlertEdgeLabel = (alert) => {
+        const msg = (alert.message || '').toLowerCase();
+        const type = (alert.type || '').toLowerCase();
+
+        if (msg.includes('auto-isolated')) {
+          return 'Auto-response by Edge AI — Safety Protocol';
+        }
+        if (msg.includes('thermal runaway') || type === 'thermal') {
+          return 'Detected by Edge AI — Thermal Anomaly Model';
+        }
+        if (msg.includes('voltage drop') || type === 'voltage') {
+          return 'Detected by Edge AI — Isolation Forest';
+        }
+        if (msg.includes('charging anomaly') || type === 'charging') {
+          return 'Detected by Edge AI — Charge Pattern Analyzer';
+        }
+        if (msg.includes('soh drop') || msg.includes('state of health')) {
+          return 'Detected by Edge AI — Degradation Predictor';
+        }
+        if (msg.includes('temp stabilizing') || msg.includes('stabilizing')) {
+          return 'Verified by Edge AI — Health Monitor';
+        }
+        return 'Detected by Edge AI — Isolation Forest';
+      };
+
+      function Dashboard({ vehicles, alerts, avgHealth, criticalCount }) {
+        const [searchQuery, setSearchQuery] = useState('');
+        const [isLoading, setIsLoading] = useState(true);
+        const [opacity, setOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setIsLoading(false);
+            setTimeout(() => setOpacity(1), 50);
+          }, 1500);
+          return () => clearTimeout(timer);
+        }, []);
+
+        const derivedRangePredictionData = vehicles.map(v => {
+          let status = 'Optimal';
+          let severity = 'success';
+          if (v.status === 'ISOLATED') {
+            status = 'Isolated from Grid';
+            severity = 'error';
+          } else if (v.temp > 49 || v.healthScore < 40) {
+            status = v.temp > 49 ? 'Thermal Hazard' : 'Critical Degradation';
+            severity = 'error';
+          } else if (v.temp > 42 || v.healthScore < 65) {
+            status = v.temp > 42 ? 'Thermal Advisory' : 'Degraded SOH';
+            severity = 'warning';
+          }
+          return {
+            vehicle: v.id,
+            batteryPercent: v.soc,
+            temperature: v.temp,
+            predictedRange: v.estimatedRange,
+            status: status,
+            severity: severity
+          };
+        });
+
+        return isLoading ? (
+          <DashboardSkeleton />
+        ) : (
+          <main className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity, transition: 'opacity 0.5s ease' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="glass-card p-5 rounded-2xl glow-green relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Avg Battery Health</p>
+                    <h3 className="text-3xl font-extrabold mt-2 text-emerald-400">{avgHealth}%</h3>
+                  </div>
+                  <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
+                    <Icons.BatteryLarge />
+                  </div>
+                </div>
+                <div className="mt-4"><span className="text-[10px] text-emerald-400 font-semibold px-1.5 py-0.5 bg-emerald-950/30 rounded border border-emerald-900/40">Within Nominal Limits</span></div>
+              </div>
+
+              <div className="glass-card p-5 rounded-2xl glow-blue relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Fleet</p>
+                    <h3 className="text-3xl font-extrabold mt-2 text-blue-400">{vehicles.length} Vehicles</h3>
+                  </div>
+                  <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400">
+                    <Icons.Cpu />
+                  </div>
+                </div>
+                <div className="mt-4"><span className="text-[10px] text-blue-400 font-semibold px-1.5 py-0.5 bg-blue-950/30 rounded border border-blue-900/40">Active in network</span></div>
+              </div>
+
+              <div className="glass-card p-5 rounded-2xl glow-blue relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Avg Range Estimate</p>
+                    <h3 className="text-3xl font-extrabold mt-2 text-blue-400">312 km</h3>
+                  </div>
+                  <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400">
+                    <Icons.Compass />
+                  </div>
+                </div>
+                <div className="mt-4"><span className="text-[10px] text-blue-400 font-semibold px-1.5 py-0.5 bg-blue-950/30 rounded border border-blue-900/40">Based on drive profiles</span></div>
+              </div>
+
+              <div className="glass-card p-5 rounded-2xl glow-red relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Batteries Critical</p>
+                    <h3 className="text-3xl font-extrabold mt-2 text-red-500">{criticalCount}</h3>
+                  </div>
+                  <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20 text-red-500">
+                    <Icons.AlertOctagon />
+                  </div>
+                </div>
+                <div className="mt-4"><span className="text-[10px] text-red-500 font-semibold px-1.5 py-0.5 bg-red-950/30 rounded border border-red-900/40">Immediate Service Required</span></div>
+              </div>
+
+              <div className="glass-card p-5 rounded-2xl glow-yellow relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Charge Cycles Today</p>
+                    <h3 className="text-3xl font-extrabold mt-2 text-amber-500">47</h3>
+                  </div>
+                  <div className="p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-500">
+                    <Icons.Zap />
+                  </div>
+                </div>
+                <div className="mt-4"><span className="text-[10px] text-amber-500 font-semibold px-1.5 py-0.5 bg-amber-950/30 rounded border border-amber-900/40">+8% higher than yesterday</span></div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 space-y-6">
+                <div className="glass-card p-6 rounded-2xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-base font-bold text-white flex items-center gap-2">
+                        <Icons.Gauge />
+                        Battery Capacity Degradation (12 Months)
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <span className="w-2 h-2 rounded-full bg-teal-400 inline-block mr-1"></span>EV-001
+                      <span className="w-2 h-2 rounded-full bg-amber-400 inline-block ml-3 mr-1"></span>EV-002
+                      <span className="w-2 h-2 rounded-full bg-red-400 inline-block ml-3 mr-1"></span>EV-003
+                    </div>
+                  </div>
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={degradationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} />
+                        <YAxis domain={[30, 100]} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
+                        <Line type="monotone" dataKey="EV-001" stroke="#2dd4bf" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="EV-002" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="EV-003" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="glass-card p-6 rounded-2xl">
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={chargeCycleData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} />
+                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
+                        <Bar dataKey="cycles" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32} />
+                        <Line type="monotone" dataKey="average" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="glass-card p-6 rounded-2xl overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-white flex items-center gap-2">
+                        <Icons.Compass />
+                        AI Range Prediction Model
+                      </h3>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search vehicle..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-900 border border-slate-800 text-xs rounded-lg text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 uppercase text-[9px]">
+                          <th className="py-2.5 px-4 font-semibold">Vehicle</th>
+                          <th className="py-2.5 px-4 font-semibold text-center">Battery SoC</th>
+                          <th className="py-2.5 px-4 font-semibold text-center">Temperature</th>
+                          <th className="py-2.5 px-4 font-semibold text-center">Predicted Range</th>
+                          <th className="py-2.5 px-4 font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/40">
+                        {derivedRangePredictionData
+                          .filter(row => row.vehicle.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map((row) => (
+                            <tr key={row.vehicle} className="hover:bg-slate-800/10 transition-colors">
+                              <td className="py-3 px-4 font-bold text-slate-200">{row.vehicle}</td>
+                              <td className="py-3 px-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <span>{row.batteryPercent}%</span>
+                                  <div className="w-10 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className={`h-full ${row.batteryPercent > 55 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${row.batteryPercent}%` }} />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-center font-mono">{row.temperature}°C</td>
+                              <td className="py-3 px-4 text-center font-bold">{row.predictedRange} km</td>
+                              <td className="py-3 px-4">
+                                <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold border ${
+                                  row.severity === 'success' ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/60' : 'bg-red-950/40 text-red-400 border-red-900/60'
+                                }`}>
+                                  {row.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="glass-card p-6 rounded-2xl flex flex-col h-[350px]">
+                  <div className="flex items-center justify-between border-b border-slate-850 pb-2 mb-3">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Icons.AlertTriangle />
+                      Live Alerts Feed
+                    </h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    {alerts.map((alert) => (
+                      <div key={alert.id} className={`p-3 rounded-xl border text-[11px] ${
+                        alert.severity === 'critical' ? 'bg-red-950/20 border-red-900/40 text-red-200' : 'bg-slate-900/40 border-slate-800 text-slate-300'
+                      }`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold">{alert.vehicle}</span>
+                          <span className="font-mono text-[9px] text-slate-500">{alert.timestamp}</span>
+                        </div>
+                        <p>{alert.message}</p>
+                        <div className="mt-1 flex items-center gap-1 text-[10px] text-cyan-400/60 font-semibold leading-none">
+                          <span className="edge-ai-icon inline-flex items-center text-cyan-400/50">
+                            <Icons.Cpu />
+                          </span>
+                          <span>{getAlertEdgeLabel(alert)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {vehicles.map((vehicle) => {
+                    const isIsolated = vehicle.status === 'ISOLATED';
+                    let statusColor = vehicle.status === 'healthy' ? 'text-emerald-400' : vehicle.status === 'warning' ? 'text-amber-400' : 'text-red-400';
+                    let statusBorder = vehicle.status === 'healthy' ? 'border-emerald-500/20' : 'border-red-500/20';
+
+                    if (isIsolated) {
+                      statusColor = 'text-red-500 font-bold border border-red-500/30 px-1.5 py-0.5 rounded bg-red-950/20';
+                      statusBorder = 'border-red-500/30';
+                    }
+
+                    return (
+                      <div key={vehicle.id} className={`glass-card p-5 rounded-2xl border ${statusBorder} relative overflow-hidden ${isIsolated ? 'opacity-45 grayscale bg-slate-950/20' : ''}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="text-sm font-extrabold text-white">{vehicle.id}</h4>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-[10px] font-extrabold uppercase ${statusColor}`}>{vehicle.status}</span>
+                            <p className="text-base font-extrabold text-slate-100">{vehicle.healthScore}% SOH</p>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500" style={{ width: `${vehicle.healthScore}%` }} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/40 text-center text-[10px]">
+                          <div>
+                            <p className="text-slate-500">Range</p>
+                            <p className="font-bold text-slate-200">{vehicle.estimatedRange} km</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Temp</p>
+                            <p className="font-bold text-slate-200">{vehicle.temp}°C</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Voltage</p>
+                            <p className="font-bold text-slate-200">{vehicle.voltage} V</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </main>
+        );
+      }
+
+      function BatteryHealth({ vehicles, setToast }) {
+        const [selectedVehicle, setSelectedVehicle] = useState('Select Vehicle');
+
+        const [animatedSoh, setAnimatedSoh] = useState({
+          'EV-001': 0,
+          'EV-002': 0,
+          'EV-003': 0,
+          'EV-004': 0
+        });
+
+        const [hasLoaded, setHasLoaded] = useState(false);
+        const [ev3DrainOffset, setEv3DrainOffset] = useState(0);
+
+        useEffect(() => {
+          const vehiclesList = ['EV-001', 'EV-002', 'EV-003', 'EV-004'];
+          vehiclesList.forEach((id, index) => {
+            setTimeout(() => {
+              const vehicle = vehicles.find(v => v.id === id);
+              if (vehicle) {
+                setAnimatedSoh(prev => ({ ...prev, [id]: vehicle.healthScore }));
+              }
+            }, index * 300);
+          });
+
+          const loadTimer = setTimeout(() => {
+            setHasLoaded(true);
+          }, 1500);
+
+          return () => clearTimeout(loadTimer);
+        }, []);
+
+        useEffect(() => {
+          if (!hasLoaded) return;
+          vehicles.forEach(vehicle => {
+            setAnimatedSoh(prev => ({ ...prev, [vehicle.id]: vehicle.healthScore }));
+          });
+        }, [vehicles, hasLoaded]);
+
+        useEffect(() => {
+          if (!hasLoaded) return;
+          const drainTimer = setInterval(() => {
+            setEv3DrainOffset(prev => prev + 1);
+          }, 10000);
+          return () => clearInterval(drainTimer);
+        }, [hasLoaded]);
+
+        const tempHistoryData = Array.from({ length: 24 }, (_, i) => ({
+          hour: `${String(i).padStart(2, '0')}:00`,
+          'EV-001': parseFloat((33.5 + Math.sin(i / 2) * 1.2).toFixed(1)),
+          'EV-002': parseFloat((41.2 + Math.cos(i / 2) * 1.5).toFixed(1)),
+          'EV-003': parseFloat((48.0 + Math.sin(i) * 2.1).toFixed(1)),
+          'EV-004': parseFloat((29.1 + Math.sin(i / 3) * 0.8).toFixed(1)),
+        }));
+
+        const cellVoltages = {
+          'EV-001': [3.92, 3.91, 3.89, 3.92, 3.90, 3.91, 3.88, 3.90],
+          'EV-002': [3.68, 3.52, 3.65, 3.48, 3.66, 3.61, 3.55, 3.60],
+          'EV-003': [3.28, 3.42, 3.12, 3.39, 3.55, 3.82, 3.68, 3.75],
+          'EV-004': [4.02, 4.01, 3.99, 4.02, 4.00, 4.01, 3.98, 4.00]
+        };
+
+        const getVoltageColorClass = (volts) => {
+          if (volts > 3.8) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+          if (volts >= 3.5) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+          return 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse';
+        };
+
+        const getGaugeColor = (soh) => {
+          if (soh > 70) return '#00ff88';
+          if (soh >= 40) return '#ffaa00';
+          return '#ff4444';
+        };
+
+        const handleScheduleService = (id) => {
+          setToast({ show: true, message: `Maintenance scheduled successfully for ${id}` });
+          setTimeout(() => setToast({ show: false, message: '' }), 4000);
+        };
+
+        const effectiveSelected = selectedVehicle === 'Select Vehicle' ? 'EV-001' : selectedVehicle;
+
+        const [pageLoading, setPageLoading] = useState(true);
+        const [pageOpacity, setPageOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1800);
+          return () => clearTimeout(timer);
+        }, []);
+
+        return pageLoading ? (
+          <BatteryHealthSkeleton />
+        ) : (
+          <div className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
+            <h2 className="text-xl font-bold text-white">Diagnostic Battery Profiles</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {vehicles.map(v => {
+                const isIsolated = v.status === 'ISOLATED';
+                const rawSoh = animatedSoh[v.id] || 0;
+                const displaySoh = v.id === 'EV-003' ? Math.max(0, rawSoh - ev3DrainOffset) : rawSoh;
+
+                let badgeStyle = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+                if (isIsolated) {
+                  badgeStyle = "bg-slate-500/10 text-slate-400 border border-slate-500/30";
+                } else if (v.status === 'critical') {
+                  badgeStyle = "bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse-subtle";
+                } else if (v.status === 'warning') {
+                  badgeStyle = "bg-amber-500/10 text-amber-400 border border-amber-500/30";
+                }
+
+                const cells = cellVoltages[v.id] || [];
+
+                return (
+                  <div key={v.id} className={`glass-card p-6 rounded-3xl border border-slate-800/60 relative flex flex-col justify-between transition-all duration-300 ${isIsolated ? 'opacity-40 grayscale bg-slate-950/20' : ''}`}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-bold text-slate-200">{v.id}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeStyle}`}>{v.status}</span>
+                    </div>
+
+                    <div className="flex justify-center items-center py-4 relative">
+                      <div className="relative w-[200px] h-[115px] flex items-center justify-center overflow-hidden">
+                        <RadialBarChart
+                          width={200}
+                          height={200}
+                          innerRadius="72%"
+                          outerRadius="100%"
+                          data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
+                          startAngle={180}
+                          endAngle={0}
+                          className="absolute top-0 left-0"
+                        >
+                          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                          <RadialBar dataKey="value" cornerRadius={6} background={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
+                        </RadialBarChart>
+                        
+                        <div className="absolute bottom-2 flex flex-col items-center justify-center pointer-events-none">
+                          <span className="text-2xl font-black text-white font-mono leading-none">{isIsolated ? '0' : displaySoh}%</span>
+                          <span className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">State of Health</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center py-3 border-t border-b border-slate-800/40 mt-2">
+                      <div>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Est. Range</span>
+                        <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '0' : `${v.estimatedRange} km`}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Pack Temp</span>
+                        <span className="text-xs font-mono font-bold text-slate-200">{isIsolated ? '—' : `${v.temp} °C`}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Bus Voltage</span>
+                        <span className="text-xs font-mono font-bold text-slate-200">{v.voltage} V</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mt-4 mb-5">
+                      <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                        <span>Cell Balancing Heatmap</span>
+                        <span>8 Pack Groups</span>
+                      </div>
+                      <div className="flex gap-1.5 justify-between">
+                        {cells.map((val, idx) => {
+                          let cellColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                          if (isIsolated) {
+                            cellColor = 'bg-slate-900/40 text-slate-500 border border-slate-800';
+                          } else if (val < 3.5) {
+                            cellColor = 'bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse-subtle';
+                          } else if (val <= 3.8) {
+                            cellColor = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                          }
+                          return (
+                            <div
+                              key={idx}
+                              title={`Cell #${idx + 1} — ${val}V`}
+                              className={`flex-1 h-6 rounded-md flex items-center justify-center font-mono text-[9px] font-bold cursor-help transition-all hover:scale-105 ${cellColor}`}
+                            >
+                              {isIsolated ? '—' : val.toFixed(2)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleScheduleService(v.id)}
+                      className={`w-full py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
+                        isIsolated || v.status === 'critical' || v.status === 'warning'
+                          ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/40'
+                      }`}
+                    >
+                      Schedule Service
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 glass-card p-6 rounded-2xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-white">Cell balancing voltage</h3>
+                  <select value={effectiveSelected} onChange={e => setSelectedVehicle(e.target.value)} className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200">
+                    {vehicles.map(v => <option key={v.id} value={v.id} disabled={v.status === 'ISOLATED'}>{v.id}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {cellVoltages[effectiveSelected]?.map((volts, i) => (
+                    <div key={i} className={`p-3 rounded-lg border text-center ${volts > 3.8 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400 animate-pulse'}`}>
+                      <span className="text-[9px] text-slate-500 block">Cell #{i+1}</span>
+                      <span className="text-sm font-extrabold mt-1 block">{volts}V</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card p-6 rounded-2xl">
+                <h3 className="text-sm font-bold text-white mb-4">Pack temperature history</h3>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={tempHistoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="hour" stroke="#64748b" fontSize={9} />
+                      <YAxis stroke="#64748b" fontSize={9} />
+                      <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
+                      <Line type="monotone" dataKey="EV-001" stroke="#2dd4bf" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="EV-002" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="EV-003" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="EV-004" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function ChargeHistory({ vehicles }) {
+        const [filterVehicle, setFilterVehicle] = useState('ALL');
+        const [pageLoading, setPageLoading] = useState(true);
+        const [pageOpacity, setPageOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1800);
+          return () => clearTimeout(timer);
+        }, []);
+
+        const logs = [
+          { id: 1, date: '2026-06-28', vehicle: 'EV-001', start: 12, end: 88, duration: 42, energy: 54.7, type: 'DC Fast' },
+          { id: 2, date: '2026-06-27', vehicle: 'EV-003', start: 22, end: 45, duration: 25, energy: 16.5, type: 'AC Slow' },
+          { id: 3, date: '2026-06-27', vehicle: 'EV-002', start: 30, end: 72, duration: 38, energy: 30.2, type: 'DC Fast' },
+          { id: 4, date: '2026-06-26', vehicle: 'EV-004', start: 15, end: 95, duration: 55, energy: 57.6, type: 'DC Fast' }
+        ];
+
+        const chargeFrequencyData = [
+          { day: 'Wk 1', 'EV-001': 5, 'EV-002': 4, 'EV-003': 3, 'EV-004': 6 },
+          { day: 'Wk 2', 'EV-001': 6, 'EV-002': 5, 'EV-003': 2, 'EV-004': 5 }
+        ];
+
+        const filtered = filterVehicle === 'ALL' ? logs : logs.filter(l => l.vehicle === filterVehicle);
+
+        return pageLoading ? (
+          <ChargeHistorySkeleton />
+        ) : (
+          <div className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Charge History logs</h2>
+              <select value={filterVehicle} onChange={e => setFilterVehicle(e.target.value)} className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200">
+                <option value="ALL">All Vehicles</option>
+                {vehicles.map(v => <option key={v.id} value={v.id}>{v.id}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card p-6 rounded-2xl">
+                <h3 className="text-sm font-bold text-white mb-4">Charge Frequency</h3>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chargeFrequencyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="day" stroke="#64748b" fontSize={9} />
+                      <YAxis stroke="#64748b" fontSize={9} />
+                      <Tooltip contentStyle={{ backgroundColor: '#151c2c', borderColor: '#1f293d' }} />
+                      <Bar dataKey="EV-001" fill="#2dd4bf" />
+                      <Bar dataKey="EV-002" fill="#f59e0b" />
+                      <Bar dataKey="EV-003" fill="#ef4444" />
+                      <Bar dataKey="EV-004" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 rounded-2xl">
+                <h3 className="text-sm font-bold text-white mb-4">Charge Session Logs</h3>
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-500 uppercase text-[9px]"><th className="py-2 font-semibold">Date</th><th className="py-2">Vehicle</th><th className="py-2 text-center">Start</th><th className="py-2 text-center">End</th><th className="py-2 text-center">Energy</th></tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(l => (
+                      <tr key={l.id} className="border-b border-slate-850 text-slate-300">
+                        <td className="py-2.5 font-medium">{l.date}</td>
+                        <td className="py-2.5 font-bold text-white">{l.vehicle}</td>
+                        <td className="py-2.5 text-center font-mono">{l.start}%</td>
+                        <td className="py-2.5 text-center font-mono">{l.end}%</td>
+                        <td className="py-2.5 text-center font-mono text-emerald-400">+{l.energy} kWh</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function RangePredictor({ vehicles, setToast }) {
+        const [soc, setSoc] = useState(88);
+        const [pageLoading, setPageLoading] = useState(true);
+        const [pageOpacity, setPageOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1800);
+          return () => clearTimeout(timer);
+        }, []);
+
+        const [temp, setTemp] = useState(34);
+        const [weight, setWeight] = useState(120);
+        const [mode, setMode] = useState('Normal');
+        const [predictedRange, setPredictedRange] = useState(0);
+        const [confidence, setConfidence] = useState(95);
+
+        const calculateRange = (socVal, tempVal, weightVal, modeVal, sohBase = 100) => {
+          const tempFactor = tempVal < 0 ? 0.6 : tempVal < 15 ? 0.8 : tempVal > 40 ? 0.85 : 1.0;
+          const loadFactor = 1 - (weightVal / 500) * 0.25;
+          const modeFactor = modeVal === 'Eco' ? 1.15 : modeVal === 'Normal' ? 1.0 : 0.82;
+          return Math.round((socVal / 100) * 400 * tempFactor * loadFactor * modeFactor * (sohBase / 100));
+        };
+
+        useEffect(() => {
+          const range = calculateRange(soc, temp, weight, mode, 100);
+          setPredictedRange(range);
+
+          let conf = 98 - (Math.abs(temp - 25) * 0.4) - ((weight / 500) * 8) - (mode === 'Sport' ? 4 : 0);
+          setConfidence(Math.round(Math.max(60, Math.min(100, conf))));
+        }, [soc, temp, weight, mode]);
+
+        // Smooth number transition count up/down animation
+        const [displayedRange, setDisplayedRange] = useState(0);
+        useEffect(() => {
+          let start = displayedRange;
+          const end = predictedRange;
+          if (start === end) return;
+
+          const duration = 250;
+          const startTime = performance.now();
+          let animationFrameId;
+
+          const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const currentVal = Math.round(start + (end - start) * progress);
+            setDisplayedRange(currentVal);
+
+            if (progress < 1) {
+              animationFrameId = requestAnimationFrame(animate);
+            }
+          };
+
+          animationFrameId = requestAnimationFrame(animate);
+          return () => cancelAnimationFrame(animationFrameId);
+        }, [predictedRange]);
+
+        const handleReset = () => {
+          setSoc(88);
+          setTemp(34);
+          setWeight(120);
+          setMode('Normal');
+        };
+
+        const handleApplyToFleet = () => {
+          if (setToast) {
+            setToast({ show: true, message: "Simulation parameters applied to all fleet telemetry forecasts." });
+            setTimeout(() => setToast({ show: false, message: "" }), 4000);
+          }
+        };
+
+        const getExplanation = () => {
+          if (mode === 'Sport') {
+            return "Sport mode increases torque response, reducing efficiency by 18%";
+          }
+          if (temp < 0) {
+            return "Sub-zero temperature reduces battery chemistry activity by 40%";
+          }
+          if (temp < 15) {
+            return "Cold temperature reduces battery chemistry efficiency by 20%";
+          }
+          if (temp > 40) {
+            return "High temperature requires active thermal cooling, reducing range by 15%";
+          }
+          if (weight > 300) {
+            return `High load weight (${weight} kg) increases rolling resistance and consumption`;
+          }
+          if (mode === 'Eco') {
+            return "Eco mode optimizes throttle response, extending range by 15%";
+          }
+          return "Operating under optimal driving and climate conditions";
+        };
+
+        let rangeColor = 'text-emerald-400';
+        let glowClass = 'glow-green';
+        if (predictedRange < 150) {
+          rangeColor = 'text-red-400';
+          glowClass = 'glow-red';
+        } else if (predictedRange <= 300) {
+          rangeColor = 'text-amber-400';
+          glowClass = 'glow-yellow';
+        }
+
+        return pageLoading ? (
+          <RangePredictorSkeleton />
+        ) : (
+          <div className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
+            <h2 className="text-xl font-bold text-white">AI Range Predictor Model</h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between">
+                <div className="space-y-5">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Simulation Parameters</h3>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>SoC (%)</span>
+                      <span className="text-emerald-400 font-bold font-mono">{soc}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value={soc} onChange={e => setSoc(parseInt(e.target.value))} className="w-full accent-emerald-500 bg-slate-900 h-1.5 rounded cursor-pointer" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Temp (°C)</span>
+                      <span className="text-amber-400 font-bold font-mono">{temp}°C</span>
+                    </div>
+                    <input type="range" min="-10" max="50" value={temp} onChange={e => setTemp(parseInt(e.target.value))} className="w-full accent-amber-500 bg-slate-900 h-1.5 rounded cursor-pointer" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Weight (kg)</span>
+                      <span className="text-blue-400 font-bold font-mono">{weight} kg</span>
+                    </div>
+                    <input type="range" min="0" max="500" value={weight} onChange={e => setWeight(parseInt(e.target.value))} className="w-full accent-blue-500 bg-slate-900 h-1.5 rounded cursor-pointer" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-400 font-medium">Drive Mode</span>
+                    <select
+                      value={mode}
+                      onChange={e => setMode(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
+                    >
+                      <option value="Eco">Eco</option>
+                      <option value="Normal">Normal</option>
+                      <option value="Sport">Sport</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-800/40">
+                  <button onClick={handleReset} className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700/40 transition-colors">
+                    Reset Defaults
+                  </button>
+                  <button onClick={handleApplyToFleet} className="py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-colors">
+                    Apply to Fleet
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2 space-y-6">
+                <div className={`glass-card p-10 rounded-2xl flex flex-col justify-center items-center text-center relative overflow-hidden transition-all duration-300 ${glowClass}`}>
+                  <span className="text-[10px] uppercase font-mono font-bold px-3 py-1 bg-slate-950/40 text-slate-400 rounded-full border border-slate-800/60 tracking-wider">Predicted Range Output</span>
+                  <h3 className={`text-6xl font-black mt-4 transition-colors duration-300 ${rangeColor}`}>
+                    {displayedRange} <span className="text-xl text-slate-400 font-medium">km</span>
+                  </h3>
+
+                  <div className="w-full max-w-xs mt-6 space-y-2">
+                    <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
+                      <span>Model Confidence</span>
+                      <span className="text-slate-300">{confidence}%</span>
+                    </div>
+                    <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-800/60">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300" style={{ width: `${confidence}%` }} />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-400 mt-6 font-medium bg-slate-950/30 border border-slate-900/60 px-4 py-2 rounded-xl max-w-sm">
+                    {getExplanation()}
+                  </p>
+                </div>
+
+                <div className="glass-card p-6 rounded-2xl">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Active Fleet Range Side-by-Side</h3>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 uppercase text-[9px] tracking-wider">
+                          <th className="py-2.5 font-semibold">Vehicle</th>
+                          <th className="py-2.5 font-semibold">Live SOH</th>
+                          <th className="py-2.5 font-semibold">Live Temp</th>
+                          <th className="py-2.5 font-semibold">Predicted Range</th>
+                          <th className="py-2.5 font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vehicles.map(v => {
+                          const isIsolated = v.status === 'ISOLATED';
+                          const range = isIsolated ? 0 : calculateRange(soc, temp, weight, mode, v.healthScore);
+                          
+                          let statusText = "Optimal";
+                          let statusBadge = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+                          if (isIsolated) {
+                            statusText = "Isolated";
+                            statusBadge = "bg-slate-500/10 text-slate-400 border border-slate-500/30";
+                          } else if (range < 150) {
+                            statusText = "Critical Range";
+                            statusBadge = "bg-red-500/10 text-red-400 border border-red-500/30";
+                          } else if (range <= 300) {
+                            statusText = "Thermal Advisory";
+                            statusBadge = "bg-amber-500/10 text-amber-400 border border-amber-500/30";
+                          }
+
+                          return (
+                            <tr key={v.id} className={`border-b border-slate-850 text-slate-300 transition-colors hover:bg-slate-800/10 ${isIsolated ? 'opacity-40' : ''}`}>
+                              <td className="py-3 font-bold text-white">{v.id}</td>
+                              <td className="py-3 font-mono">{isIsolated ? '—' : `${v.healthScore}%`}</td>
+                              <td className="py-3 font-mono">{isIsolated ? '—' : `${v.temp}°C`}</td>
+                              <td className="py-3 font-mono font-bold text-slate-200">{isIsolated ? '0' : range} km</td>
+                              <td className="py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide ${statusBadge}`}>
+                                  {statusText}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 mt-4 text-center italic">
+                    Predictions generated by Edge AI model deployed on vehicle ECU
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function FleetMap({ vehicles, alerts }) {
+        const mapContainerRef = useRef(null);
+        const mapInstanceRef = useRef(null);
+        const markersRef = useRef({});
+
+        const [pageLoading, setPageLoading] = useState(true);
+        const [pageOpacity, setPageOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1800);
+          return () => clearTimeout(timer);
+        }, []);
+
+        // Status counts
+        const healthyCount = vehicles.filter(v => v.status === 'healthy').length;
+        const warningCount = vehicles.filter(v => v.status === 'warning').length;
+        const criticalCount = vehicles.filter(v => v.status === 'critical' || v.status === 'ISOLATED').length;
+
+        const coordinates = {
+          'EV-001': [19.0760, 72.8777],
+          'EV-002': [28.6139, 77.2090],
+          'EV-003': [12.9716, 77.5946],
+          'EV-004': [13.0827, 80.2707],
+        };
+
+        const getCustomIconHtml = (status, id) => {
+          let pinColor = '#10B981'; // Healthy green
+          let shadowColor = 'rgba(16, 185, 129, 0.4)';
+          
+          if (status === 'warning') {
+            pinColor = '#F59E0B'; // Warning yellow
+            shadowColor = 'rgba(245, 158, 11, 0.4)';
+          } else if (status === 'critical') {
+            pinColor = '#EF4444'; // Critical red
+            shadowColor = 'rgba(239, 68, 68, 0.5)';
+          } else if (status === 'ISOLATED') {
+            pinColor = '#94A3B8'; // Isolated gray
+            shadowColor = 'rgba(148, 163, 184, 0.3)';
+          }
+
+          const isCritical = status === 'critical';
+
+          return `
+            <div class="relative flex items-center justify-center w-8 h-8">
+              ${isCritical ? `
+                <span class="absolute w-8 h-8 rounded-full bg-red-500/30 animate-ping"></span>
+                <span class="absolute w-12 h-12 rounded-full bg-red-500/20 animate-pulse"></span>
+              ` : ''}
+              ${id === 'EV-003' && !isCritical ? `
+                <span class="absolute w-10 h-10 rounded-full bg-red-500/10 animate-pulse"></span>
+              ` : ''}
+              <div class="w-4 h-4 rounded-full border border-slate-900 flex items-center justify-center shadow-lg" 
+                   style="background-color: ${pinColor}; box-shadow: 0 0 10px ${shadowColor};">
+                <div class="w-1 h-1 rounded-full bg-slate-950/80"></div>
+              </div>
+            </div>
+          `;
+        };
+
+        // Initialize Map
+        useEffect(() => {
+          if (pageLoading) return;
+          if (!mapInstanceRef.current && mapContainerRef.current) {
+            const map = L.map(mapContainerRef.current, {
+              zoomControl: false
+            }).setView([20.5937, 78.9629], 5);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'topleft' }).addTo(map);
+
+            mapInstanceRef.current = map;
+          }
+
+          return () => {
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.remove();
+              mapInstanceRef.current = null;
+            }
+          };
+        }, [pageLoading]);
+
+        // Sync Markers when vehicles/alerts state updates
+        useEffect(() => {
+          const map = mapInstanceRef.current;
+          if (!map) return;
+
+          // Clear previous markers
+          Object.values(markersRef.current).forEach(m => m.remove());
+          markersRef.current = {};
+
+          // Add fresh markers
+          vehicles.forEach((v) => {
+            const coords = coordinates[v.id];
+            if (!coords) return;
+
+            const isIsolated = v.status === 'ISOLATED';
+            const vehicleAlert = alerts.find(a => a.vehicle === v.id)?.message || 'No active fault alerts logged.';
+
+            const customIcon = L.divIcon({
+              className: 'custom-div-icon',
+              html: getCustomIconHtml(v.status, v.id),
+              iconSize: [32, 32],
+              iconAnchor: [16, 16],
+              popupAnchor: [0, -10]
+            });
+
+            const popupHtml = `
+              <div class="w-[220px] p-1 space-y-3 text-slate-200 font-sans" style="font-family: system-ui, sans-serif;">
+                <div class="flex justify-between items-center" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="text-base font-black text-white" style="font-weight: 900; font-size: 14px; color: white;">${v.id}</span>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" 
+                        style="font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid ${
+                          v.status === 'healthy' ? 'rgba(16,185,129,0.3); background: rgba(16,185,129,0.1); color: #34d399;' :
+                          v.status === 'warning' ? 'rgba(245,158,11,0.3); background: rgba(245,158,11,0.1); color: #fbbf24;' :
+                          'rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); color: #f87171;'
+                        }">
+                    ${isIsolated ? 'ISOLATED' : v.status.toUpperCase()}
+                  </span>
+                </div>
+
+                <div class="space-y-1" style="margin-bottom: 8px;">
+                  <div class="flex justify-between text-[10px] text-slate-400" style="display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af;">
+                    <span>SOH Capacity</span>
+                    <span class="font-bold font-mono text-slate-200">${isIsolated ? '0' : v.healthScore}%</span>
+                  </div>
+                  <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden" style="width: 100%; background: #1f2937; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 4px;">
+                    <div class="h-full" style="height: 100%; width: ${isIsolated ? 0 : v.healthScore}%; background: ${
+                      isIsolated ? '#6b7280' :
+                      v.healthScore > 70 ? '#10b981' :
+                      v.healthScore >= 40 ? '#f59e0b' : '#ef4444'
+                    };"></div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[10px] bg-slate-900/60 p-2 rounded-lg border border-slate-800/40" 
+                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; background: rgba(17,24,39,0.6); padding: 8px; border-radius: 8px; border: 1px solid rgba(31,41,55,0.4); margin-bottom: 8px;">
+                  <div>
+                    <span class="text-slate-500 block" style="color: #6b7280; display: block; font-size: 9px;">Temperature</span>
+                    <span class="font-bold text-slate-300 font-mono" style="font-weight: 700; color: #d1d5db;">${isIsolated ? '—' : `${v.temp}°C`}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block" style="color: #6b7280; display: block; font-size: 9px;">Est. Range</span>
+                    <span class="font-bold text-slate-300 font-mono" style="font-weight: 700; color: #d1d5db;">${isIsolated ? '0' : v.estimatedRange} km</span>
+                  </div>
+                  <div style="grid-column: span 2; border-top: 1px solid rgba(55,65,81,0.5); padding-top: 4px; margin-top: 4px;">
+                    <span class="text-slate-500 block" style="color: #6b7280; display: block; font-size: 9px;">Last Charged</span>
+                    <span class="font-semibold text-slate-300" style="color: #d1d5db;">${v.lastCharged}</span>
+                  </div>
+                </div>
+
+                <div class="text-[9px] bg-slate-950/40 border border-slate-900/60 p-2 rounded-lg text-slate-400 leading-normal" 
+                     style="font-size: 9px; background: rgba(3,7,18,0.4); border: 1px solid rgba(31,41,55,0.6); padding: 6px; border-radius: 8px; color: #9ca3af; line-height: 1.3; margin-bottom: 8px;">
+                  <span class="font-bold text-slate-300 block mb-0.5 uppercase tracking-wider" style="font-weight: 700; color: #d1d5db; display: block; font-size: 8px; margin-bottom: 2px;">Latest Alert</span>
+                  ${vehicleAlert}
+                </div>
+
+                <button
+                  id="map-popup-btn-${v.id}"
+                  class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition-colors uppercase tracking-wider"
+                  style="width: 100%; border: none; outline: none; cursor: pointer; padding: 6px; background: #2563eb; color: white; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"
+                >
+                  View Full Profile
+                </button>
+              </div>
+            `;
+
+            const marker = L.marker(coords, { icon: customIcon }).addTo(map).bindPopup(popupHtml);
+
+            marker.on('popupopen', () => {
+              const btn = document.getElementById(`map-popup-btn-${v.id}`);
+              if (btn) {
+                btn.onclick = () => {
+                  if (window.switchStandaloneTab) {
+                    window.switchStandaloneTab('Battery Health', v.id);
+                  }
+                };
+              }
+            });
+
+            markersRef.current[v.id] = marker;
+          });
+        }, [vehicles, alerts, pageLoading]);
+
+        const handleFitAll = () => {
+          const map = mapInstanceRef.current;
+          if (map) {
+            const bounds = L.latLngBounds(Object.values(coordinates));
+            map.fitBounds(bounds, { padding: [50, 50] });
+          }
+        };
+
+        const handleCenterOnCritical = () => {
+          const map = mapInstanceRef.current;
+          const marker = markersRef.current['EV-003'];
+          if (map && marker) {
+            const coords = coordinates['EV-003'];
+            map.flyTo(coords, 8, { duration: 1.2 });
+            setTimeout(() => {
+              marker.openPopup();
+            }, 1250);
+          }
+        };
+
+        return pageLoading ? (
+          <FleetMapSkeleton />
+        ) : (
+          <div className="p-6 space-y-6 overflow-hidden flex-1 flex flex-col h-full animate-fade-in" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">Active Fleet Mapping</h2>
+              <p className="text-xs text-slate-400 mt-1">Live geographic tracking of fleet assets, diagnostic indicators, and operational regions</p>
+            </div>
+
+            <div className="flex justify-between items-center gap-4 flex-wrap">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="px-3.5 py-1.5 bg-slate-900 border border-slate-800/80 rounded-full text-xs font-bold text-slate-300">
+                  📍 {vehicles.length} Vehicles Tracked
+                </span>
+                <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold">
+                  🟢 {healthyCount} Healthy
+                </span>
+                <span className="px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold">
+                  🟡 {warningCount} Warning
+                </span>
+                <span className="px-3.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-bold">
+                  🔴 {criticalCount} Critical
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleFitAll}
+                  className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/40 rounded-xl text-xs font-bold transition-colors"
+                >
+                  Fit All Vehicles
+                </button>
+                <button
+                  onClick={handleCenterOnCritical}
+                  className="py-2 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-colors animate-pulse-glow"
+                >
+                  Center on Critical
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full rounded-2xl border border-slate-800/60 overflow-hidden relative min-h-[500px] z-10 shadow-inner">
+              <div ref={mapContainerRef} className="w-full h-full" style={{ width: '100%', height: '100%' }}></div>
+
+              <div className="absolute bottom-6 right-6 z-[400] glass-panel bg-slate-950/80 border border-slate-800/80 p-4 rounded-xl text-[10px] space-y-2 max-w-[180px] shadow-2xl pointer-events-auto leading-normal">
+                <h4 className="font-bold text-white uppercase tracking-wider mb-1 text-[9px]">Fleet Status Legend</h4>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-900"></span>
+                  <span className="text-slate-300 font-medium">Healthy vehicle</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-slate-900"></span>
+                  <span className="text-slate-300 font-medium">Warning — service required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-slate-900"></span>
+                  <span className="text-slate-300 font-medium">Critical — immediate action</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function Settings({ settings, setSettings, setToast }) {
+        const [pageLoading, setPageLoading] = useState(true);
+        const [pageOpacity, setPageOpacity] = useState(0);
+
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1800);
+          return () => clearTimeout(timer);
+        }, []);
+
+        const handleValChange = (field, val) => {
+          setSettings(prev => ({ ...prev, [field]: val }));
+        };
+
+        const handleSave = (e) => {
+          e.preventDefault();
+          setToast({ show: true, message: 'Settings saved successfully' });
+          setTimeout(() => setToast({ show: false, message: '' }), 4000);
+        };
+
+        return pageLoading ? (
+          <SettingsSkeleton />
+        ) : (
+          <div className="p-6 space-y-6 overflow-y-auto animate-fade-in flex-1" style={{ opacity: pageOpacity, transition: 'opacity 0.5s ease' }}>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">System Settings & Parameters</h2>
+            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 glass-card p-6 rounded-2xl space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-semibold block">Thermal trigger Temperature (°C)</label>
+                    <input type="number" value={settings.thermalTriggerTemp} onChange={e => handleValChange('thermalTriggerTemp', parseFloat(e.target.value))} className="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs rounded-xl text-slate-200" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-semibold block">Critical SOH threshold (%)</label>
+                    <input type="number" value={settings.criticalSohThreshold} onChange={e => handleValChange('criticalSohThreshold', parseFloat(e.target.value))} className="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs rounded-xl text-slate-200" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-semibold block">Alert refresh interval (seconds)</label>
+                    <input type="number" value={settings.alertRefreshInterval} onChange={e => handleValChange('alertRefreshInterval', parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs rounded-xl text-slate-200" />
+                  </div>
+                </div>
+              </div>
+              <div className="lg:col-span-1 glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between"><span>Model Version</span><span className="font-bold">EV-EdgeAI v2.0.4</span></div>
+                  <div className="flex justify-between"><span>Status</span><span className="text-emerald-400 font-bold">Active</span></div>
+                </div>
+                <button type="submit" className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl mt-4">Save Configuration</button>
+              </div>
+            </form>
+          </div>
+        );
+      }
+
+      const playThermalWarningSound = () => {
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          // Three descending beeps — subtle warning tone
+          [0, 0.3, 0.6].forEach((delay, i) => {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880 - i * 110, audioCtx.currentTime + delay);
+
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime + delay);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + delay + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + delay + 0.25);
+
+            oscillator.start(audioCtx.currentTime + delay);
+            oscillator.stop(audioCtx.currentTime + delay + 0.3);
+          });
+        } catch (err) {
+          console.log('Audio not available:', err);
+        }
+      };
+
+      function App() {
+        const [activeTab, setActiveTab] = useState('Dashboard');
+        const [currentTime, setCurrentTime] = useState(new Date());
+        const [vehicles, setVehicles] = useState(vehicleHealthData);
+        const [preSelectedVehicle, setPreSelectedVehicle] = useState('Select Vehicle');
+
+        useEffect(() => {
+          window.switchStandaloneTab = (tabName, vehicleId) => {
+            setActiveTab(tabName);
+            if (vehicleId) {
+              setPreSelectedVehicle(vehicleId);
+            }
+          };
+          return () => {
+            window.switchStandaloneTab = null;
+          };
+        }, []);
+        const [alerts, setAlerts] = useState([
+          ...initialAlertsFeed,
+          {
+            id: 'alt-8',
+            vehicle: 'EV-004',
+            message: 'Pack health recalibration completed',
+            severity: 'warning',
+            timestamp: '09:12:04',
+            type: 'charging'
+          }
+        ]);
+
+        const [settings, setSettings] = useState({
+          thermalTriggerTemp: 49.0,
+          criticalSohThreshold: 35.0,
+          alertRefreshInterval: 8,
+          emailAlerts: true,
+          soundAlerts: false,
+          autoIsolate: false
+        });
+
+        const [showWarning, setShowWarning] = useState(false);
+        const [isSnoozed, setIsSnoozed] = useState(false);
+        const [detectionTime, setDetectionTime] = useState('');
+        const [toast, setToast] = useState({ show: false, message: '' });
+
+        const [countdown, setCountdown] = useState(30);
+        const [countdownActive, setCountdownActive] = useState(false);
+        const [isAutoIsolating, setIsAutoIsolating] = useState(false);
+        const [isNotifying, setIsNotifying] = useState(false);
+        const [isFrozen, setIsFrozen] = useState(false);
+        const [tempHistory, setTempHistory] = useState([
+          { time: '-9s', temp: 45.2 },
+          { time: '-8s', temp: 46.1 },
+          { time: '-7s', temp: 46.8 },
+          { time: '-6s', temp: 47.3 },
+          { time: '-5s', temp: 47.9 },
+          { time: '-4s', temp: 48.6 },
+          { time: '-3s', temp: 49.4 },
+          { time: '-2s', temp: 50.1 },
+          { time: '-1s', temp: 50.9 },
+          { time: 'now', temp: 51.7 },
+        ]);
+
+        // Sound players
+        const playBeep = (freq, duration) => {
+          try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+              audioCtx.resume();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration - 0.05);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration);
+          } catch (err) {
+            console.log('Audio not available:', err);
+          }
+        };
+
+        const playTripleBeep = () => {
+          [0, 0.2, 0.4].forEach((delay) => {
+            setTimeout(() => playBeep(520, 0.15), delay * 1000);
+          });
+        };
+
+        const playUrgentBeep = () => {
+          [0, 0.25].forEach((delay) => {
+            setTimeout(() => {
+              try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                  audioCtx.resume();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2 - 0.05);
+
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+              } catch (err) {
+                console.log('Audio not available:', err);
+              }
+            }, delay * 1000);
+          });
+        };
+
+        // Start countdown when warning opens
+        useEffect(() => {
+          if (showWarning) {
+            setCountdown(30);
+            setCountdownActive(true);
+            setIsAutoIsolating(false);
+            setIsNotifying(false);
+            setIsFrozen(false);
+            setTempHistory([
+              { time: '-9s', temp: 45.2 },
+              { time: '-8s', temp: 46.1 },
+              { time: '-7s', temp: 46.8 },
+              { time: '-6s', temp: 47.3 },
+              { time: '-5s', temp: 47.9 },
+              { time: '-4s', temp: 48.6 },
+              { time: '-3s', temp: 49.4 },
+              { time: '-2s', temp: 50.1 },
+              { time: '-1s', temp: 50.9 },
+              { time: 'now', temp: 51.7 },
+            ]);
+          } else {
+            setCountdownActive(false);
+          }
+        }, [showWarning]);
+
+        // Tick every second
+        useEffect(() => {
+          if (!countdownActive) return;
+          if (countdown <= 0) {
+            setCountdownActive(false);
+            setIsAutoIsolating(true);
+            setIsFrozen(true);
+            playUrgentBeep();
+            setTimeout(() => {
+              handleIsolateVehicle(true);
+              setIsAutoIsolating(false);
+            }, 2000);
+            return;
+          }
+          const timer = setInterval(() => {
+            setCountdown(prev => prev - 1);
+          }, 1000);
+          return () => clearInterval(timer);
+        }, [countdown, countdownActive]);
+
+        // Add new reading every second while popup is open
+        useEffect(() => {
+          if (!showWarning || isFrozen) return;
+          const interval = setInterval(() => {
+            setTempHistory(prev => {
+              const lastTemp = prev[prev.length - 1].temp;
+              const newTemp = Math.min(54.9, lastTemp + (Math.random() * 0.4 + 0.1));
+              const newPoint = {
+                time: 'now',
+                temp: parseFloat(newTemp.toFixed(1))
+              };
+              const updated = prev.map((p, i) => ({
+                ...p,
+                time: `-${prev.length - i}s`
+              }));
+              return [...updated.slice(-9), newPoint];
+            });
+          }, 1000);
+          return () => clearInterval(interval);
+        }, [showWarning, isFrozen]);
+
+        // Sound triggers at critical moments
+        useEffect(() => {
+          if (!countdownActive) return;
+          if (countdown === 10) playBeep(440, 0.2);
+          if (countdown === 5) playTripleBeep();
+          if (countdown === 0) playUrgentBeep();
+        }, [countdown, countdownActive]);
+
+        const handleIsolateVehicleClick = () => {
+          setIsFrozen(true);
+          setCountdownActive(false);
+          handleIsolateVehicle(false);
+        };
+
+        const handleAlertTechnicianClick = () => {
+          setIsNotifying(true);
+          setCountdownActive(false);
+          handleAlertTechnician();
+          setTimeout(() => {
+            setIsNotifying(false);
+          }, 3000);
+        };
+
+        const handleDismissWarningClick = () => {
+          setCountdownActive(false);
+          handleDismissWarning();
+        };
+
+        const ev3 = vehicles.find(v => v.id === 'EV-003');
+        const isEv3Anomaly = ev3 && ev3.status !== 'ISOLATED' && (
+          ev3.temp > settings.thermalTriggerTemp || ev3.healthScore < settings.criticalSohThreshold
+        );
+
+        useEffect(() => {
+          if (isEv3Anomaly) {
+            if (settings.autoIsolate) {
+              handleIsolateVehicle();
+            } else if (!isSnoozed && !showWarning) {
+              setShowWarning(true);
+              playThermalWarningSound();
+              if (!detectionTime) {
+                setDetectionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+              }
+            }
+          } else {
+            setShowWarning(false);
+            setDetectionTime('');
+          }
+        }, [isEv3Anomaly, isSnoozed, settings.autoIsolate]);
+
+        const handleDismissWarning = () => {
+          setShowWarning(false);
+          setIsSnoozed(true);
+          setTimeout(() => setIsSnoozed(false), 30000);
+        };
+
+        const handleIsolateVehicle = (autoIsolated = false) => {
+          setVehicles(prevVehicles => prevVehicles.map(v => {
+            if (v.id === 'EV-003') return { ...v, status: 'ISOLATED' };
+            return v;
+          }));
+
+          setToast({ show: true, message: autoIsolated ? 'Vehicle EV-003 auto-isolated successfully' : 'Vehicle EV-003 isolated successfully' });
+          setTimeout(() => setToast({ show: false, message: '' }), 4000);
+
+          const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const newAlert = {
+            id: `alt-${Date.now()}`,
+            vehicle: 'EV-003',
+            message: autoIsolated 
+              ? 'EV-003 auto-isolated by Edge AI — no technician response detected'
+              : 'Grid Disconnection: EV-003 isolated successfully due to thermal threat.',
+            severity: 'critical',
+            timestamp: timestamp,
+            type: 'thermal'
+          };
+          setAlerts(prevAlerts => [newAlert, ...prevAlerts].slice(0, 7));
+          setShowWarning(false);
+        };
+
+        const handleAlertTechnician = () => {
+          setToast({ show: true, message: 'Technician notified via edge network' });
+          setTimeout(() => setToast({ show: false, message: '' }), 4000);
+        };
+
+        useEffect(() => {
+          const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+          return () => clearInterval(timer);
+        }, []);
+
+        useEffect(() => {
+          const healthTimer = setInterval(() => {
+            setVehicles(prevVehicles => prevVehicles.map(vehicle => {
+              if (vehicle.status === 'ISOLATED') return vehicle;
+              if (['EV-001', 'EV-002', 'EV-003', 'EV-004'].includes(vehicle.id)) {
+                const change = Math.floor(Math.random() * 5) - 2;
+                let newSoh = vehicle.healthScore + change;
+
+                if (vehicle.id === 'EV-001') newSoh = Math.max(80, Math.min(85, newSoh));
+                if (vehicle.id === 'EV-002') newSoh = Math.max(58, Math.min(64, newSoh));
+                if (vehicle.id === 'EV-003') newSoh = Math.max(35, Math.min(41, newSoh));
+                if (vehicle.id === 'EV-004') newSoh = Math.max(89, Math.min(93, newSoh));
+
+                let newStatus = 'healthy';
+                if (newSoh < settings.criticalSohThreshold) {
+                  newStatus = 'critical';
+                } else if (newSoh < 65) {
+                  newStatus = 'warning';
+                }
+
+                return { ...vehicle, healthScore: newSoh, status: newStatus };
+              }
+              return vehicle;
+            }));
+          }, 5000);
+          return () => clearInterval(healthTimer);
+        }, [settings.criticalSohThreshold]);
+
+        useEffect(() => {
+          const tempTimer = setInterval(() => {
+            setVehicles(prevVehicles => prevVehicles.map(vehicle => {
+              if (vehicle.status === 'ISOLATED') return vehicle;
+              let change = (Math.random() * 1.6 - 0.8);
+              let newTemp = vehicle.temp + change;
+
+              if (vehicle.id === 'EV-003') {
+                newTemp = Math.max(46.5, Math.min(settings.thermalTriggerTemp + 2.5, newTemp));
+              } else {
+                if (vehicle.id === 'EV-001') newTemp = Math.max(32, Math.min(36, newTemp));
+                if (vehicle.id === 'EV-002') newTemp = Math.max(40, Math.min(45, newTemp));
+                if (vehicle.id === 'EV-004') newTemp = Math.max(30, Math.min(33, newTemp));
+              }
+
+              let socChange = Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0;
+              let newSoc = Math.max(10, Math.min(100, vehicle.soc + socChange));
+              
+              let baseRange = vehicle.id === 'EV-001' ? 390 : vehicle.id === 'EV-002' ? 350 : vehicle.id === 'EV-003' ? 310 : 440;
+              let newRange = Math.round(baseRange * (newSoc / 100) * (vehicle.healthScore / 100));
+
+              return { ...vehicle, temp: parseFloat(newTemp.toFixed(1)), soc: newSoc, estimatedRange: newRange };
+            }));
+          }, 6000);
+          return () => clearInterval(tempTimer);
+        }, [settings.thermalTriggerTemp]);
+
+        useEffect(() => {
+          const alertTimer = setInterval(() => {
+            const randomTemplate = alertTemplates[Math.floor(Math.random() * alertTemplates.length)];
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const randomVehicle = `EV-00${Math.floor(Math.random() * 4) + 1}`;
+
+            const newAlert = {
+              id: `alt-${Date.now()}`,
+              vehicle: randomVehicle,
+              message: randomTemplate.message,
+              severity: randomTemplate.severity,
+              timestamp: timestamp,
+              type: randomTemplate.type
+            };
+            setAlerts(prevAlerts => [newAlert, ...prevAlerts].slice(0, 7));
+          }, settings.alertRefreshInterval * 1000);
+          return () => clearInterval(alertTimer);
+        }, [settings.alertRefreshInterval]);
+
+        const handleTriggerTelemetryRefresh = () => {
+          const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const newAlerts = [
+            {
+              id: `alt-${Date.now()}`,
+              vehicle: `EV-00${Math.floor(Math.random() * 4) + 1}`,
+              message: `Manual telemetry sync: all sensors balanced.`,
+              severity: 'info',
+              timestamp: timestamp,
+              type: 'nominal'
+            },
+            ...alerts
+          ];
+          setAlerts(newAlerts.slice(0, 7));
+        };
+
+        const formatTimestamp = (date) => {
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        };
+
+        const avgHealth = Math.round(vehicles.reduce((sum, v) => sum + v.healthScore, 0) / vehicles.length);
+        const criticalCount = vehicles.filter(v => v.status === 'critical' || v.healthScore < settings.criticalSohThreshold).length;
+        const criticalAlertsCount = alerts.filter(a => a.severity === 'critical').length;
+        const warningAlertsCount = alerts.filter(a => a.severity === 'warning').length;
+
+        const [showDropdown, setShowDropdown] = useState(false);
+        const [isDownloading, setIsDownloading] = useState(false);
+        const dropdownRef = useRef(null);
+
+        // Close dropdown on click outside
+        useEffect(() => {
+          function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+              setShowDropdown(false);
+            }
+          }
+          document.addEventListener("mousedown", handleClickOutside);
+          return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+          };
+        }, []);
+
+        const handleExportCSV = () => {
+          setShowDropdown(false);
+          setIsDownloading(true);
+
+          setTimeout(() => {
+            try {
+              const dateStr = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '');
+              
+              const vehicleRows = vehicles.map(v => ({
+                'Vehicle': v.id,
+                'SOH%': `${v.status === 'ISOLATED' ? '0' : v.healthScore}%`,
+                'Est Range': `${v.status === 'ISOLATED' ? '0' : v.estimatedRange} km`,
+                'Pack Temp': v.status === 'ISOLATED' ? '—' : `${v.temp}°C`,
+                'Bus Voltage': `${v.voltage}V`,
+                'Status': v.status === 'ISOLATED' ? 'ISOLATED' : v.status.toUpperCase(),
+                'Last Charged': v.lastCharged,
+                'Last Alert': alerts.find(a => a.vehicle === v.id)?.message || 'None'
+              }));
+              
+              const alertRows = alerts.slice(-7).reverse().map(a => ({
+                'Timestamp': a.timestamp,
+                'Vehicle ID': a.vehicle,
+                'Alert Type': a.type || 'Nominal',
+                'Severity': a.severity.toUpperCase()
+              }));
+
+              const csvVehicles = Papa.unparse(vehicleRows);
+              const csvAlerts = Papa.unparse(alertRows);
+              const csvString = `${csvVehicles}\n\n--- Alerts Log (Last 7) ---\n${csvAlerts}`;
+
+              const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.setAttribute('href', url);
+              link.setAttribute('download', `EV_Fleet_Report_${dateStr}.csv`);
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              setToast({ show: true, message: '✓ CSV downloaded successfully' });
+              setTimeout(() => setToast({ show: false, message: '' }), 3000);
+            } catch (err) {
+              console.error('CSV generation failed:', err);
+            } finally {
+              setIsDownloading(false);
+            }
+          }, 1000);
+        };
+
+        const handleExportPDF = () => {
+          setShowDropdown(false);
+          setIsDownloading(true);
+
+          setTimeout(() => {
+            try {
+              const doc = new window.jspdf.jsPDF();
+              const dateStr = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '');
+              const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+              // Helper for styling
+              const drawHeader = (title) => {
+                doc.setFillColor(15, 25, 35);
+                doc.rect(0, 0, 210, 35, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.text(title, 14, 22);
+                
+                doc.setFontSize(9);
+                doc.setTextColor(156, 163, 175);
+                doc.text(`Generated: ${dateStr} ${timeStr} | Edge AI Diagnostics`, 14, 29);
+              };
+
+              const drawFooter = (pageNum) => {
+                doc.setFontSize(8);
+                doc.setTextColor(156, 163, 175);
+                doc.text('Tata Technologies InnoVent — Confidential', 14, 287);
+                doc.text(`Page ${pageNum} of 3`, 180, 287);
+              };
+
+              // --- PAGE 1: FLEET SUMMARY ---
+              drawHeader('EV Battery Intelligence — Fleet Report');
+
+              doc.setTextColor(21, 28, 44);
+              doc.setFontSize(12);
+              doc.text('Operational Fleet Diagnostics Summary', 14, 50);
+
+              // 4 Metric Boxes
+              const avgSohVal = avgHealth;
+              const avgRangeVal = Math.round(vehicles.reduce((acc, v) => acc + (v.status === 'ISOLATED' ? 0 : v.estimatedRange), 0) / vehicles.length);
+              const critCountVal = criticalCount;
+              const totalCyclesVal = vehicles.reduce((acc, v) => acc + v.cycles, 0);
+
+              const boxWidth = 43;
+              const boxHeight = 22;
+              const startX = 14;
+              const startY = 56;
+              const metrics = [
+                { label: 'Fleet Avg SOH', val: `${avgSohVal}%` },
+                { label: 'Fleet Avg Range', val: `${avgRangeVal} km` },
+                { label: 'Critical Group', val: critCountVal },
+                { label: 'Total Charge Cycles', val: totalCyclesVal }
+              ];
+
+              metrics.forEach((m, idx) => {
+                const x = startX + idx * (boxWidth + 5);
+                doc.setFillColor(243, 244, 246);
+                doc.setDrawColor(229, 231, 235);
+                doc.roundedRect(x, startY, boxWidth, boxHeight, 3, 3, 'FD');
+                
+                doc.setFontSize(8);
+                doc.setTextColor(107, 114, 128);
+                doc.text(m.label, x + 4, startY + 7);
+                
+                doc.setFontSize(13);
+                doc.setTextColor(17, 24, 39);
+                doc.text(String(m.val), x + 4, startY + 16);
+              });
+
+              // Fleet status table
+              doc.setFontSize(11);
+              doc.setTextColor(21, 28, 44);
+              doc.text('Asset Profiles Telemetry', 14, 92);
+
+              const fleetRows = vehicles.map(v => [
+                v.id,
+                `${v.status === 'ISOLATED' ? '0' : v.healthScore}%`,
+                v.status === 'ISOLATED' ? '0 km' : `${v.estimatedRange} km`,
+                v.status === 'ISOLATED' ? '—' : `${v.temp}°C`,
+                `${v.voltage}V`,
+                v.status.toUpperCase(),
+                v.lastCharged
+              ]);
+
+              doc.autoTable({
+                head: [['Vehicle', 'SOH%', 'Est Range', 'Pack Temp', 'Bus Voltage', 'Status', 'Last Charged']],
+                body: fleetRows,
+                startY: 97,
+                theme: 'striped',
+                headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255] },
+                alternateRowStyles: { fillColor: [249, 250, 251] },
+                styles: { fontSize: 9 }
+              });
+
+              drawFooter(1);
+
+              // --- PAGE 2: ALERTS LOG ---
+              doc.addPage();
+              drawHeader('Live Anomaly Alerts Log');
+
+              doc.setFontSize(12);
+              doc.setTextColor(21, 28, 44);
+              doc.text('Active Edge AI Detection Feed', 14, 50);
+
+              const getClassifierModel = (msg, type) => {
+                const m = (msg || '').toLowerCase();
+                const t = (type || '').toLowerCase();
+                if (m.includes('thermal runaway') || t === 'thermal') return 'Thermal Anomaly Model';
+                if (m.includes('voltage drop') || t === 'voltage') return 'Isolation Forest';
+                if (m.includes('charging anomaly') || t === 'charging') return 'Charge Pattern Analyzer';
+                if (m.includes('soh drop') || m.includes('state of health')) return 'Degradation Predictor';
+                if (m.includes('temp stabilizing') || m.includes('stabilizing')) return 'Health Monitor';
+                return 'Isolation Forest';
+              };
+
+              const alertRows = alerts.slice(-10).reverse().map(a => [
+                a.timestamp,
+                a.vehicle,
+                a.type ? a.type.toUpperCase() : 'TELEMETRY',
+                a.severity.toUpperCase(),
+                getClassifierModel(a.message, a.type)
+              ]);
+
+              doc.autoTable({
+                head: [['Time', 'Vehicle ID', 'Alert Type', 'Severity', 'AI Model Used']],
+                body: alertRows,
+                startY: 56,
+                theme: 'striped',
+                headStyles: { fillColor: [239, 68, 68], textColor: [255, 255, 255] },
+                alternateRowStyles: { fillColor: [254, 242, 242] },
+                styles: { fontSize: 8.5 }
+              });
+
+              doc.setFontSize(9);
+              doc.setTextColor(107, 114, 128);
+              doc.text('All alerts detected by Edge AI — Isolation Forest Model', 14, 250);
+
+              drawFooter(2);
+
+              // --- PAGE 3: VEHICLE PROFILES ---
+              doc.addPage();
+              drawHeader('Battery Diagnostic Profiles');
+
+              doc.setFontSize(12);
+              doc.setTextColor(21, 28, 44);
+              doc.text('Individual Asset Diagnostics & Recommended Actions', 14, 50);
+
+              let currentY = 58;
+              vehicles.forEach((v) => {
+                const isIsolated = v.status === 'ISOLATED';
+                
+                doc.setFillColor(249, 250, 251);
+                doc.setDrawColor(229, 231, 235);
+                doc.roundedRect(14, currentY, 182, 45, 3, 3, 'FD');
+
+                // Title
+                doc.setFontSize(11);
+                doc.setTextColor(17, 24, 39);
+                doc.text(`${v.id} - ${isIsolated ? 'ISOLATED' : v.status.toUpperCase()}`, 18, currentY + 7);
+
+                // Details grid
+                doc.setFontSize(8.5);
+                doc.setTextColor(107, 114, 128);
+                doc.text(`SOH Capacity: ${isIsolated ? '0' : v.healthScore}%`, 18, currentY + 16);
+                doc.text(`Estimated Range: ${isIsolated ? '0' : v.estimatedRange} km`, 18, currentY + 22);
+                doc.text(`Pack Temperature: ${isIsolated ? '—' : `${v.temp}°C`}`, 18, currentY + 28);
+                doc.text(`Bus Voltage: ${v.voltage}V`, 18, currentY + 34);
+
+                // Actions
+                let actionText = '';
+                if (v.status === 'healthy') {
+                  actionText = 'No action required. Telemetry nominal.';
+                } else if (v.status === 'warning') {
+                  actionText = 'Schedule maintenance review. Inspect cells delta.';
+                } else if (v.status === 'critical') {
+                  actionText = 'Immediate grid isolation. Dispatch technician.';
+                } else if (isIsolated) {
+                  actionText = 'Vehicle is isolated from grid. Inspect battery pack.';
+                }
+
+                doc.setTextColor(31, 41, 55);
+                doc.text('Recommended Action:', 100, currentY + 16);
+                doc.setTextColor(v.status === 'critical' || isIsolated ? 220 : 75, v.status === 'critical' ? 38 : 85, 38);
+                doc.text(actionText, 100, currentY + 22);
+
+                currentY += 51;
+              });
+
+              drawFooter(3);
+
+              doc.save(`EV_Fleet_Report_${dateStr}.pdf`);
+
+              setToast({ show: true, message: `✓ PDF report downloaded — EV_Fleet_Report_${dateStr}.pdf` });
+              setTimeout(() => setToast({ show: false, message: '' }), 3000);
+            } catch (err) {
+              console.error('PDF generation failed:', err);
+            } finally {
+              setIsDownloading(false);
+            }
+          }, 1000);
+        };
+
+        const navItems = [
+          { name: 'Dashboard', icon: Icons.Gauge },
+          { name: 'Battery Health', icon: Icons.Battery },
+          { name: 'Charge History', icon: Icons.History },
+          { name: 'Range Predictor', icon: Icons.Compass },
+          { name: 'Fleet Map', icon: Icons.MapPin },
+          { name: 'Settings', icon: Icons.Sliders }
+        ];
+
+        return (
+          <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans">
+            
+            {/* SIDEBAR */}
+            <aside className="hidden md:flex md:w-64 flex-col fixed inset-y-0 left-0 glass-panel border-r border-slate-800/60 z-30">
+              <div className="p-6 flex items-center gap-3 border-b border-slate-800/40">
+                <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
+                  <Icons.Cpu />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                    Tata InnoVent
+                  </h1>
+                  <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Edge AI Diagnostics</p>
+                </div>
+              </div>
+
+              <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.name;
+                  return (
+                    <button
+                      key={item.name}
+                      id={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+                      onClick={() => setActiveTab(item.name)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
+                        isActive
+                          ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/5 text-emerald-400 border-l-4 border-emerald-400 shadow-inner'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <Icon />
+                      {item.name}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              <div className="p-4 border-t border-slate-800/40 bg-slate-900/20 text-center">
+                <p className="text-[11px] text-slate-500">Tata Technologies</p>
+                <p className="text-[9px] text-emerald-500/60 font-mono mt-0.5">EV-EdgeAI v2.0.4</p>
+              </div>
+            </aside>
+
+            {/* Main Content Area */}
+            <div className="flex-1 md:pl-64 flex flex-col min-w-0">
+              
+              {/* TOP BAR */}
+              <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-6 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="md:hidden p-2 bg-emerald-500 rounded-lg mr-2">
+                    <Icons.Cpu />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                      EV Battery Intelligence
+                      <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2.5 py-0.5 bg-[#020e06] text-[#00ff80] rounded border border-emerald-500/30 animate-badge-glow">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00ff80] animate-dot-pulse shadow-[0_0_8px_rgba(0,255,128,0.8)]"></span>
+                        TELEMETRY ACTIVE
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-400 hidden sm:block">Real-time battery pack diagnostics and edge prediction</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span id="badge-critical" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-900/60 rounded-full animate-pulse-subtle">
+                      <Icons.AlertOctagon />
+                      {criticalAlertsCount} critical
+                    </span>
+                    <span id="badge-warning" className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-900/60 rounded-full">
+                      <Icons.AlertTriangle />
+                      {warningAlertsCount} warnings
+                    </span>
+                  </div>
+
+                  <div className="h-8 w-px bg-slate-800/80 hidden sm:block"></div>
+
+                  <div className="flex items-center gap-3">
+                    <button 
+                      id="btn-refresh"
+                      onClick={handleTriggerTelemetryRefresh}
+                      className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
+                      title="Force Telemetry Sync"
+                    >
+                      <Icons.RefreshCw />
+                    </button>
+                    
+                    <div className="relative">
+                      <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors">
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                        <Icons.Bell />
+                      </button>
+                    </div>
+
+                    {/* DOWNLOAD REPORT DROPDOWN BUTTON */}
+                    <div className="relative" ref={dropdownRef}>
+                      <button
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        disabled={isDownloading}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-850 text-xs font-bold text-slate-200 hover:text-white border border-slate-700/50 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed animate-fade-in"
+                      >
+                        {isDownloading ? (
+                          <svg className="animate-spin h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        ) : (
+                          <Icons.Download />
+                        )}
+                        <span>{isDownloading ? 'Downloading...' : 'Download Report'}</span>
+                      </button>
+
+                      {showDropdown && (
+                        <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-850 bg-[#0c1220]/95 backdrop-blur shadow-2xl z-50 p-1.5 space-y-1">
+                          <button
+                            onClick={handleExportPDF}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
+                          >
+                            <Icons.FileDown className="w-3.5 h-3.5 text-red-400" />
+                            <span>Export as PDF</span>
+                          </button>
+                          <button
+                            onClick={handleExportCSV}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-300 hover:text-white text-left transition-colors cursor-pointer"
+                          >
+                            <Icons.FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Export as CSV</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="hidden lg:block text-right">
+                      <p className="text-[10px] text-slate-500 uppercase font-semibold">Last Telemetry</p>
+                      <p className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                        <Icons.Clock />
+                        {formatTimestamp(currentTime)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* View Router */}
+              <div className="flex-1 transition-all duration-300">
+                {activeTab === 'Dashboard' && (
+                  <Dashboard
+                    vehicles={vehicles}
+                    alerts={alerts}
+                    avgHealth={avgHealth}
+                    criticalCount={criticalCount}
+                  />
+                )}
+                {activeTab === 'Battery Health' && (
+                  <BatteryHealth
+                    vehicles={vehicles}
+                    setToast={setToast}
+                    preSelectedVehicle={preSelectedVehicle}
+                  />
+                )}
+                {activeTab === 'Charge History' && (
+                  <ChargeHistory
+                    vehicles={vehicles}
+                  />
+                )}
+                {activeTab === 'Range Predictor' && (
+                  <RangePredictor
+                    vehicles={vehicles}
+                    setToast={setToast}
+                  />
+                )}
+                {activeTab === 'Fleet Map' && (
+                  <FleetMap
+                    vehicles={vehicles}
+                    alerts={alerts}
+                  />
+                )}
+                {activeTab === 'Settings' && (
+                  <Settings
+                    settings={settings}
+                    setSettings={setSettings}
+                    setToast={setToast}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
+            {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
+            {showWarning && ev3 && (() => {
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference - (countdown / 30) * circumference;
+
+              const getTimerColor = (sec) => {
+                if (sec > 14) return '#f59e0b';
+                if (sec >= 6) return '#f97316';
+                return '#ef4444';
+              };
+              const ringColor = getTimerColor(countdown);
+
+              const currentTemp = tempHistory[tempHistory.length - 1]?.temp || 51.7;
+              let lineColor = '#ff4444';
+              let lineStrokeWidth = 2;
+              if (isFrozen) {
+                lineColor = '#64748b';
+                lineStrokeWidth = 2;
+              } else if (currentTemp > 52) {
+                lineColor = '#cc0000';
+                lineStrokeWidth = 3;
+              } else if (currentTemp >= 49) {
+                lineColor = '#ff4444';
+                lineStrokeWidth = 2;
+              } else {
+                lineColor = '#ff6b35';
+                lineStrokeWidth = 2;
+              }
+
+              let popupBorderClass = "border-red-500 glow-red animate-pulse-subtle";
+              if (countdown <= 5) {
+                popupBorderClass = "border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.9)] animate-pulse-red animate-shake";
+              } else if (countdown <= 10) {
+                popupBorderClass = "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.8)] animate-shake";
+              } else if (countdown <= 15) {
+                popupBorderClass = "border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.75)]";
+              }
+
+              return (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 transition-all duration-300">
+                  <div className={`bg-[#121824] border-2 rounded-3xl max-w-md w-full p-6 shadow-2xl transition-all duration-300 ${popupBorderClass}`}>
+                    
+                    {/* Countdown Display */}
+                    <div className="flex flex-col items-center justify-center mb-5 mt-2">
+                      <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2">
+                        CRITICAL RESPONSE REQUIRED WITHIN
+                      </p>
+                      
+                      <div className="relative flex items-center justify-center">
+                        <svg width="140" height="140" viewBox="0 0 140 140" className="drop-shadow-lg">
+                          {/* Background ring */}
+                          <circle cx="70" cy="70" r={radius}
+                            fill="none" stroke="#1a2332" strokeWidth="8" />
+                          {/* Countdown ring */}
+                          <circle cx="70" cy="70" r={radius}
+                            fill="none" stroke={ringColor} strokeWidth="8"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            transform="rotate(-90 70 70)"
+                            style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
+                          />
+                          {/* Countdown number in center */}
+                          <text 
+                            x="70" 
+                            y="70" 
+                            textAnchor="middle" 
+                            dominantBaseline="middle"
+                            fontSize="36" 
+                            fontWeight="black" 
+                            fill={ringColor}
+                            className={`font-mono transition-all duration-300 ${countdown <= 5 ? 'animate-flash-red text-red-500' : ''}`}
+                          >
+                            {countdown}
+                          </text>
+                        </svg>
+                      </div>
+                      
+                      <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-2">
+                        SECONDS
+                      </p>
+                    </div>
+
+                    <div className="text-center mb-6">
+                      <h2 className="text-xl font-black text-red-500 tracking-wide uppercase">
+                        {isAutoIsolating ? "⚠ NO RESPONSE DETECTED — AUTO ISOLATING" : "⚠ THERMAL RUNAWAY RISK — EV-003"}
+                      </h2>
+                      <p className="text-xs text-slate-400 font-bold tracking-wider uppercase mt-1">
+                        {isAutoIsolating ? "Safety isolation protocol initiated" : "Immediate intervention required"}
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-3 mb-6">
+                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
+                        <span className="text-xs text-slate-400 font-medium">Pack Temperature</span>
+                        <span className="text-2xl font-black text-red-500 tracking-tight animate-pulse">
+                          {ev3.temp}°C
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
+                        <span className="text-xs text-slate-400 font-medium">Current SOH</span>
+                        <span className="text-sm font-bold text-slate-200">{ev3.healthScore}%</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
+                        <span className="text-xs text-slate-400 font-medium">Cell Group Affected</span>
+                        <span className="text-sm font-bold text-amber-400">Cell Group 4</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400 font-medium">Time of Detection</span>
+                        <span className="text-sm font-mono text-slate-300 font-bold">{detectionTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Live Temperature Rising Graph */}
+                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Pack Temperature — Live Reading</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base font-black tracking-tight transition-colors duration-300" style={{ color: lineColor }}>
+                            {currentTemp.toFixed(1)}°C
+                          </span>
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-slate-950/40 rounded border border-slate-800/60 animate-pulse" style={{ color: isFrozen ? '#64748b' : lineColor }}>
+                            {isFrozen ? 'Paused' : '↑ Rising'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isFrozen && (
+                        <div className="text-center text-[10px] font-bold text-slate-400 bg-slate-800/40 py-1 rounded-lg border border-slate-800/60 mb-2">
+                          ❄ Vehicle isolated — monitoring paused
+                        </div>
+                      )}
+
+                      <ResponsiveContainer width="100%" height={120}>
+                        <LineChart data={tempHistory} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                          <XAxis
+                            dataKey="time"
+                            tick={{ fill: '#888', fontSize: 10 }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            domain={[44, 55]}
+                            tick={{ fill: '#888', fontSize: 10 }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={v => `${v}°`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: '#0f1923',
+                              border: `0.5px solid ${lineColor}`,
+                              borderRadius: '6px',
+                              fontSize: '11px'
+                            }}
+                            formatter={v => [`${v}°C`, 'Pack Temp']}
+                          />
+                          {/* Danger zone threshold line */}
+                          <ReferenceLine
+                            y={49}
+                            stroke="#ff4444"
+                            strokeDasharray="4 4"
+                            label={{
+                              value: 'Danger 49°C',
+                              fill: '#ff4444',
+                              fontSize: 10,
+                              position: 'insideTopRight'
+                            }}
+                          />
+                          {/* Temperature line */}
+                          <Line
+                            type="monotone"
+                            dataKey="temp"
+                            stroke={lineColor}
+                            strokeWidth={lineStrokeWidth}
+                            dot={{ fill: lineColor, r: 3 }}
+                            activeDot={{ r: 5, fill: '#ff4444' }}
+                            isAnimationActive={true}
+                            animationDuration={300}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5 mb-4">
+                      <button
+                        onClick={handleIsolateVehicleClick}
+                        className={`w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-red-950/20 ${countdownActive ? 'animate-pulsing-border border-red-500' : ''}`}
+                      >
+                        Isolate Vehicle
+                      </button>
+                      <button
+                        onClick={handleAlertTechnicianClick}
+                        disabled={isNotifying}
+                        className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/60 text-slate-950 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2"
+                      >
+                        {isNotifying && (
+                          <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        )}
+                        <span>{isNotifying ? 'Notifying...' : 'Alert Technician'}</span>
+                      </button>
+                      <button
+                        onClick={handleDismissWarningClick}
+                        className="w-full py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/30 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors"
+                      >
+                        Dismiss Warning
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-center text-slate-500 font-semibold tracking-wide">
+                      Edge AI anomaly verification via Isolation Forest model
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Edge Network Notification Toast */}
+            {toast.show && (
+              <div className="fixed bottom-6 right-6 bg-emerald-950/90 border border-emerald-500/50 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 z-[9999] animate-bounce-subtle">
+                <div className="p-1 bg-emerald-500 rounded-full text-black">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <span className="text-xs font-bold text-emerald-200">{toast.message}</span>
+              </div>
+            )}
+
+          </div>
+        );
+      }
+
+      const rootElement = document.getElementById('root');
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<App />);
+    </script>
+  </body>
+</html>
