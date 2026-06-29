@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   AlertOctagon, AlertTriangle, Battery, Bell, Clock, Cpu, Gauge,
   History, Compass, MapPin, Sliders, RefreshCw, Thermometer, ShieldAlert,
-  Download, FileSpreadsheet, FileDown, Wrench, X
+  Download, FileSpreadsheet, FileDown, Wrench, X, Menu
 } from 'lucide-react';
 
 import Papa from 'papaparse';
