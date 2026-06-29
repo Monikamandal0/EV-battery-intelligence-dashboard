@@ -495,7 +495,7 @@ export default function Layout({
     { name: 'Charge History', path: '/charge-history', icon: History },
     { name: 'Range Predictor', path: '/range-predictor', icon: Compass },
     { name: 'Fleet Map', path: '/fleet-map', icon: MapPin },
-    { name: 'Maintenance', path: '/recommendations', icon: Wrench },
+    { name: 'Maintenance', path: '/maintenance', icon: Wrench },
     { name: 'Settings', path: '/settings', icon: Sliders }
   ];
 

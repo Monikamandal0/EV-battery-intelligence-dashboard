@@ -6,7 +6,7 @@ import BatteryHealth from './pages/BatteryHealth';
 import ChargeHistory from './pages/ChargeHistory';
 import RangePredictor from './pages/RangePredictor';
 import FleetMap from './pages/FleetMap';
-
+import Maintenance from './pages/Maintenance';
 import Settings from './pages/Settings';
 import { vehicleHealthData, alertsFeed } from './data/mockData';
 
@@ -384,7 +384,7 @@ export default function App() {
           <Route path="charge-history" element={<ChargeHistory />} />
           <Route path="range-predictor" element={<RangePredictor />} />
           <Route path="fleet-map" element={<FleetMap />} />
-          
+          <Route path="maintenance" element={<Maintenance />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
