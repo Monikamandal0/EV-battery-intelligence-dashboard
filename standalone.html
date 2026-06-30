@@ -3746,7 +3746,9 @@
                       id={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                       onClick={() => {
                         setActiveTab(item.name);
-                        setSidebarOpen(false); // Auto close drawer on click
+                        if (isMobile) {
+                          setSidebarOpen(false); // Auto close drawer on click
+                        }
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                         isActive
