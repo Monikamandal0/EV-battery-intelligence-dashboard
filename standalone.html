@@ -1466,25 +1466,72 @@
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeStyle}`}>{v.status}</span>
                     </div>
 
-                    <div className="flex justify-center items-center py-4 relative">
-                      <div className="relative flex items-center justify-center overflow-hidden" style={{ width: isMobile ? '150px' : '200px', height: isMobile ? '85px' : '115px' }}>
-                        <RadialBarChart
-                          width={isMobile ? 150 : 200}
-                          height={isMobile ? 150 : 200}
-                          innerRadius="72%"
-                          outerRadius="100%"
-                          data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
-                          startAngle={180}
-                          endAngle={0}
-                          className="absolute top-0 left-0"
-                        >
-                          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                          <RadialBar dataKey="value" cornerRadius={6} background={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
-                        </RadialBarChart>
-                        
-                        <div className="absolute bottom-2 flex flex-col items-center justify-center pointer-events-none">
-                          <span className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black text-white font-mono leading-none`}>{isIsolated ? '0' : displaySoh}%</span>
-                          <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">State of Health</span>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: isMobile ? '120px' : '160px',
+                      position: 'relative',
+                      margin: '0 auto',
+                      width: '100%'
+                    }}>
+                      <RadialBarChart
+                        width={isMobile ? 150 : 200}
+                        height={isMobile ? 85 : 110}
+                        cx="50%"
+                        cy="100%"
+                        innerRadius="80%"
+                        outerRadius="110%"
+                        barSize={isMobile ? 10 : 14}
+                        data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
+                        startAngle={180}
+                        endAngle={0}
+                        style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)' }}
+                      >
+                        <PolarAngleAxis
+                          type="number"
+                          domain={[0, 100]}
+                          angleAxisId={0}
+                          tick={false}
+                        />
+                        <RadialBar
+                          background={{ fill: '#1a2332', stroke: 'none' }}
+                          dataKey="value"
+                          cornerRadius={10}
+                          angleAxisId={0}
+                          isAnimationActive={true}
+                        />
+                      </RadialBarChart>
+                      
+                      <div style={{
+                        position: 'absolute',
+                        top: '60%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center',
+                        width: '100%',
+                        pointerEvents: 'none'
+                      }}>
+                        <div style={{
+                          fontSize: isMobile ? '20px' : '26px',
+                          fontWeight: 'bold',
+                          color: '#fff',
+                          lineHeight: 1.1,
+                          fontFamily: 'monospace'
+                        }}>
+                          {isIsolated ? '0' : displaySoh}%
+                        </div>
+                        <div style={{
+                          fontSize: isMobile ? '8px' : '10px',
+                          color: '#888',
+                          marginTop: '4px',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          fontWeight: 'bold',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          State of Health
                         </div>
                       </div>
                     </div>
