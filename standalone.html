@@ -2245,6 +2245,14 @@
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
 
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            setPageLoading(false);
+            setTimeout(() => setPageOpacity(1), 50);
+          }, 1500);
+          return () => clearTimeout(timer);
+        }, []);
+
         const handleValChange = (field, val) => {
           setSettings(prev => ({ ...prev, [field]: val }));
         };
