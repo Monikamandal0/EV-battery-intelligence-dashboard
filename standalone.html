@@ -815,17 +815,10 @@
         return 'Detected by Edge AI — Isolation Forest';
       };
 
-      function Dashboard({ vehicles, alerts, avgHealth, criticalCount, recommendations, setRecommendations, setToast, setActiveTab }) {
+      function Dashboard({ vehicles, alerts, avgHealth, criticalCount, recommendations, setRecommendations, setToast, setActiveTab, isMobile }) {
         const [searchQuery, setSearchQuery] = useState('');
         const [isLoading, setIsLoading] = useState(true);
         const [opacity, setOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
         const [selectedVehicle, setSelectedVehicle] = useState('');
@@ -1351,15 +1344,8 @@
         );
       }
 
-      function BatteryHealth({ vehicles, setToast }) {
+      function BatteryHealth({ vehicles, setToast, isMobile }) {
         const [selectedVehicle, setSelectedVehicle] = useState('Select Vehicle');
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         const [animatedSoh, setAnimatedSoh] = useState({
           'EV-001': 0,
@@ -1602,18 +1588,11 @@
         );
       }
 
-      function ChargeHistory({ vehicles }) {
+      function ChargeHistory({ vehicles, isMobile }) {
         const [filterVehicle, setFilterVehicle] = useState('ALL');
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
         const [showAllColumns, setShowAllColumns] = useState(false);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -1732,17 +1711,10 @@
         );
       }
 
-      function RangePredictor({ vehicles, setToast }) {
+      function RangePredictor({ vehicles, setToast, isMobile }) {
         const [soc, setSoc] = useState(88);
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -1994,20 +1966,13 @@
         );
       }
 
-      function FleetMap({ vehicles, alerts }) {
+      function FleetMap({ vehicles, alerts, isMobile }) {
         const mapContainerRef = useRef(null);
         const mapInstanceRef = useRef(null);
         const markersRef = useRef({});
 
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         useEffect(() => {
           const timer = setTimeout(() => {
@@ -2276,16 +2241,9 @@
         );
       }
 
-      function Settings({ settings, setSettings, setToast, handleExportPDF, handleExportCSV }) {
+      function Settings({ settings, setSettings, setToast, handleExportPDF, handleExportCSV, isMobile }) {
         const [pageLoading, setPageLoading] = useState(true);
         const [pageOpacity, setPageOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         const handleValChange = (field, val) => {
           setSettings(prev => ({ ...prev, [field]: val }));
@@ -2391,16 +2349,9 @@
         }
       };
 
-      function Maintenance({ vehicles, setToast, recommendations, setRecommendations }) {
+      function Maintenance({ vehicles, setToast, recommendations, setRecommendations, isMobile }) {
         const [isLoading, setIsLoading] = useState(true);
         const [opacity, setOpacity] = useState(0);
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-        useEffect(() => {
-          const handleResize = () => setIsMobile(window.innerWidth < 768);
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-        }, []);
 
         // Modal & Form States
         const [isModalOpen, setIsModalOpen] = useState(false);
@@ -2992,7 +2943,20 @@
         const [currentTime, setCurrentTime] = useState(new Date());
         const [vehicles, setVehicles] = useState(vehicleHealthData);
         const [preSelectedVehicle, setPreSelectedVehicle] = useState('Select Vehicle');
-        const [sidebarOpen, setSidebarOpen] = useState(false);
+        
+        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+        const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+
+        useEffect(() => {
+          const checkMobile = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            setSidebarOpen(!mobile); // open on desktop, closed on mobile by default
+          };
+          checkMobile();
+          window.addEventListener('resize', checkMobile);
+          return () => window.removeEventListener('resize', checkMobile);
+        }, []);
 
         useEffect(() => {
           window.switchStandaloneTab = (tabName, vehicleId) => {
@@ -3703,6 +3667,8 @@
           }, 1000);
         };
 
+        const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
         const navItems = [
           { name: 'Dashboard', icon: Icons.Gauge },
           { name: 'Battery Health', icon: Icons.Battery },
@@ -3717,17 +3683,37 @@
           <div className="flex min-h-screen bg-[#070b14] text-slate-100 font-sans overflow-x-hidden">
             
             {/* SIDEBAR OVERLAY (Mobile) */}
-            {sidebarOpen && (
+            {isMobile && sidebarOpen && (
               <div 
-                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
                 onClick={() => setSidebarOpen(false)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.5)',
+                  zIndex: 40
+                }}
               />
             )}
 
             {/* SIDEBAR */}
-            <aside className={`fixed inset-y-0 left-0 w-64 flex flex-col glass-panel border-r border-slate-800/60 z-50 transition-transform duration-300 md:translate-x-0 ${
-              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}>
+            <aside 
+              className="flex flex-col glass-panel border-r border-slate-800/60"
+              style={isMobile ? {
+                position: 'fixed',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                width: '200px',
+                transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                transition: 'transform 300ms ease',
+                zIndex: 50
+              } : {
+                width: sidebarOpen ? '200px' : '0px',
+                overflow: 'hidden',
+                transition: 'width 300ms ease',
+                flexShrink: 0
+              }}
+            >
               <div className="p-6 flex items-center justify-between border-b border-slate-800/40">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg glow-green">
@@ -3783,7 +3769,13 @@
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 md:pl-64 flex flex-col min-w-0">
+            <div 
+              className="flex flex-col min-w-0"
+              style={{
+                flex: 1,
+                transition: 'all 300ms ease'
+              }}
+            >
               
               {/* TOP BAR */}
               <header className="sticky top-0 z-20 glass-panel border-b border-slate-800/60 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -3791,13 +3783,24 @@
                 {/* Row 1: Hamburger & Title (Mobile) / Single Row Left (Desktop) */}
                 <div className="flex items-center justify-between w-full md:w-auto">
                   <div className="flex items-center gap-2">
-                    {/* Hamburger menu button */}
-                    <button
-                      onClick={() => setSidebarOpen(true)}
-                      className="md:hidden p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/40 transition-colors"
-                      style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    {/* Hamburger Button */}
+                    <button 
+                      onClick={toggleSidebar} 
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-primary, #fff)',
+                        fontSize: '20px',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        minWidth: '44px',
+                        minHeight: '44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                     >
-                      <span className="text-xl font-bold">☰</span>
+                      {sidebarOpen ? '✕' : '☰'}
                     </button>
 
                     <div className="flex items-center gap-3">
@@ -3933,6 +3936,7 @@
                     setRecommendations={setRecommendations}
                     setToast={setToast}
                     setActiveTab={setActiveTab}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Battery Health' && (
@@ -3940,23 +3944,27 @@
                     vehicles={vehicles}
                     setToast={setToast}
                     preSelectedVehicle={preSelectedVehicle}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Charge History' && (
                   <ChargeHistory
                     vehicles={vehicles}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Range Predictor' && (
                   <RangePredictor
                     vehicles={vehicles}
                     setToast={setToast}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Fleet Map' && (
                   <FleetMap
                     vehicles={vehicles}
                     alerts={alerts}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Maintenance' && (
@@ -3965,6 +3973,7 @@
                     setToast={setToast}
                     recommendations={recommendations}
                     setRecommendations={setRecommendations}
+                    isMobile={isMobile}
                   />
                 )}
                 {activeTab === 'Settings' && (
@@ -3974,6 +3983,7 @@
                     setToast={setToast}
                     handleExportPDF={handleExportPDF}
                     handleExportCSV={handleExportCSV}
+                    isMobile={isMobile}
                   />
                 )}
               </div>
@@ -3982,7 +3992,7 @@
             {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
             {/* THERMAL RUNAWAY WARNING POPUP FOR EV-003 */}
             {showWarning && ev3 && (() => {
-              const radius = 54;
+              const radius = 36;
               const circumference = 2 * Math.PI * radius;
               const strokeDashoffset = circumference - (countdown / 30) * circumference;
 
@@ -4021,35 +4031,43 @@
 
               return (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 transition-all duration-300">
-                  <div className={`bg-[#121824] border-2 rounded-3xl max-w-md w-full p-6 shadow-2xl transition-all duration-300 ${popupBorderClass}`}>
+                  <div 
+                    className={`bg-[#121824] border-2 shadow-2xl transition-all duration-300 ${popupBorderClass}`}
+                    style={{
+                      maxWidth: '380px',
+                      width: '90vw',
+                      padding: '16px',
+                      borderRadius: '12px'
+                    }}
+                  >
                     
                     {/* Countdown Display */}
-                    <div className="flex flex-col items-center justify-center mb-5 mt-2">
-                      <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2">
+                    <div className="flex flex-col items-center justify-center mb-2.5 mt-1">
+                      <p className="text-[9px] text-slate-500 font-bold tracking-widest uppercase mb-2">
                         CRITICAL RESPONSE REQUIRED WITHIN
                       </p>
                       
                       <div className="relative flex items-center justify-center">
-                        <svg width="140" height="140" viewBox="0 0 140 140" className="drop-shadow-lg">
+                        <svg width="90" height="90" viewBox="0 0 90 90" className="drop-shadow-lg">
                           {/* Background ring */}
-                          <circle cx="70" cy="70" r={radius}
-                            fill="none" stroke="#1a2332" strokeWidth="8" />
+                          <circle cx="45" cy="45" r={radius}
+                            fill="none" stroke="#1a2332" strokeWidth="6" />
                           {/* Countdown ring */}
-                          <circle cx="70" cy="70" r={radius}
-                            fill="none" stroke={ringColor} strokeWidth="8"
+                          <circle cx="45" cy="45" r={radius}
+                            fill="none" stroke={ringColor} strokeWidth="6"
                             strokeDasharray={circumference}
                             strokeDashoffset={strokeDashoffset}
                             strokeLinecap="round"
-                            transform="rotate(-90 70 70)"
+                            transform="rotate(-90 45 45)"
                             style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
                           />
                           {/* Countdown number in center */}
                           <text 
-                            x="70" 
-                            y="70" 
+                            x="45" 
+                            y="45" 
                             textAnchor="middle" 
                             dominantBaseline="middle"
-                            fontSize="36" 
+                            fontSize="22" 
                             fontWeight="black" 
                             fill={ringColor}
                             className={`font-mono transition-all duration-300 ${countdown <= 5 ? 'animate-flash-red text-red-500' : ''}`}
@@ -4059,72 +4077,72 @@
                         </svg>
                       </div>
                       
-                      <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-2">
+                      <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-2">
                         SECONDS
                       </p>
                     </div>
 
-                    <div className="text-center mb-6">
-                      <h2 className="text-xl font-black text-red-500 tracking-wide uppercase">
+                    <div className="text-center mb-2.5">
+                      <h2 className="text-[15px] font-black text-red-500 tracking-wide uppercase leading-tight">
                         {isAutoIsolating ? "⚠ NO RESPONSE DETECTED — AUTO ISOLATING" : "⚠ THERMAL RUNAWAY RISK — EV-003"}
                       </h2>
-                      <p className="text-xs text-slate-400 font-bold tracking-wider uppercase mt-1">
+                      <p className="text-[11px] text-slate-400 font-bold tracking-wider uppercase mt-1">
                         {isAutoIsolating ? "Safety isolation protocol initiated" : "Immediate intervention required"}
                       </p>
                     </div>
 
-                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-3 mb-6">
-                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
-                        <span className="text-xs text-slate-400 font-medium">Pack Temperature</span>
-                        <span className="text-2xl font-black text-red-500 tracking-tight animate-pulse">
+                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 space-y-2 mb-2.5">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800/40">
+                        <span className="text-[11px] text-slate-400 font-medium">Pack Temperature</span>
+                        <span className="text-base font-black text-red-500 tracking-tight animate-pulse">
                           {ev3.temp}°C
                         </span>
                       </div>
-                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
-                        <span className="text-xs text-slate-400 font-medium">Current SOH</span>
-                        <span className="text-sm font-bold text-slate-200">{ev3.healthScore}%</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800/40">
+                        <span className="text-[11px] text-slate-400 font-medium">Current SOH</span>
+                        <span className="text-[11px] font-bold text-slate-200">{ev3.healthScore}%</span>
                       </div>
-                      <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/40">
-                        <span className="text-xs text-slate-400 font-medium">Cell Group Affected</span>
-                        <span className="text-sm font-bold text-amber-400">Cell Group 4</span>
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-800/40">
+                        <span className="text-[11px] text-slate-400 font-medium">Cell Group Affected</span>
+                        <span className="text-[11px] font-bold text-amber-400">Cell Group 4</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-400 font-medium">Time of Detection</span>
-                        <span className="text-sm font-mono text-slate-300 font-bold">{detectionTime}</span>
+                        <span className="text-[11px] text-slate-400 font-medium">Time of Detection</span>
+                        <span className="text-[11px] font-mono text-slate-300 font-bold">{detectionTime}</span>
                       </div>
                     </div>
 
                     {/* Live Temperature Rising Graph */}
-                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 mb-4">
+                    <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 mb-2.5">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Pack Temperature — Live Reading</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">Pack Temp — Live Reading</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-base font-black tracking-tight transition-colors duration-300" style={{ color: lineColor }}>
+                          <span className="text-[13px] font-black tracking-tight transition-colors duration-300" style={{ color: lineColor }}>
                             {currentTemp.toFixed(1)}°C
                           </span>
-                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-slate-950/40 rounded border border-slate-800/60 animate-pulse" style={{ color: isFrozen ? '#64748b' : lineColor }}>
+                          <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 bg-slate-950/40 rounded border border-slate-800/60 animate-pulse" style={{ color: isFrozen ? '#64748b' : lineColor }}>
                             {isFrozen ? 'Paused' : '↑ Rising'}
                           </span>
                         </div>
                       </div>
 
                       {isFrozen && (
-                        <div className="text-center text-[10px] font-bold text-slate-400 bg-slate-800/40 py-1 rounded-lg border border-slate-800/60 mb-2">
+                        <div className="text-center text-[9px] font-bold text-slate-400 bg-slate-800/40 py-1 rounded-lg border border-slate-800/60 mb-2">
                           ❄ Vehicle isolated — monitoring paused
                         </div>
                       )}
 
-                      <ResponsiveContainer width="100%" height={120}>
-                        <LineChart data={tempHistory} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                      <ResponsiveContainer width="100%" height={80}>
+                        <LineChart data={tempHistory} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                           <XAxis
                             dataKey="time"
-                            tick={{ fill: '#888', fontSize: 10 }}
+                            tick={{ fill: '#888', fontSize: 8 }}
                             axisLine={false}
                             tickLine={false}
                           />
                           <YAxis
                             domain={[44, 55]}
-                            tick={{ fill: '#888', fontSize: 10 }}
+                            tick={{ fill: '#888', fontSize: 8 }}
                             axisLine={false}
                             tickLine={false}
                             tickFormatter={v => `${v}°`}
@@ -4134,7 +4152,7 @@
                               background: '#0f1923',
                               border: `0.5px solid ${lineColor}`,
                               borderRadius: '6px',
-                              fontSize: '11px'
+                              fontSize: '10px'
                             }}
                             formatter={v => [`${v}°C`, 'Pack Temp']}
                           />
@@ -4146,7 +4164,7 @@
                             label={{
                               value: 'Danger 49°C',
                               fill: '#ff4444',
-                              fontSize: 10,
+                              fontSize: 8,
                               position: 'insideTopRight'
                             }}
                           />
@@ -4156,8 +4174,8 @@
                             dataKey="temp"
                             stroke={lineColor}
                             strokeWidth={lineStrokeWidth}
-                            dot={{ fill: lineColor, r: 3 }}
-                            activeDot={{ r: 5, fill: '#ff4444' }}
+                            dot={{ fill: lineColor, r: 2 }}
+                            activeDot={{ r: 4, fill: '#ff4444' }}
                             isAnimationActive={true}
                             animationDuration={300}
                           />
@@ -4165,17 +4183,33 @@
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="flex flex-col gap-2.5 mb-4">
+                    <div className="flex flex-col gap-[6px] mb-2.5">
                       <button
                         onClick={handleIsolateVehicleClick}
-                        className={`w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-red-950/20 ${countdownActive ? 'animate-pulsing-border border-red-500' : ''}`}
+                        className={`w-full bg-red-600 hover:bg-red-500 text-white rounded-lg font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-red-950/20 cursor-pointer ${countdownActive ? 'animate-pulsing-border border-red-500' : ''}`}
+                        style={{
+                          height: '34px',
+                          fontSize: '12px',
+                          padding: '0 10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
                         Isolate Vehicle
                       </button>
                       <button
                         onClick={handleAlertTechnicianClick}
                         disabled={isNotifying}
-                        className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/60 text-slate-950 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2"
+                        className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/60 text-slate-950 rounded-lg font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-amber-950/20 flex items-center justify-center gap-2 cursor-pointer"
+                        style={{
+                          height: '34px',
+                          fontSize: '12px',
+                          padding: '0 10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
                         {isNotifying && (
                           <svg className="animate-spin h-3.5 w-3.5 text-slate-950" fill="none" viewBox="0 0 24 24">
@@ -4187,13 +4221,21 @@
                       </button>
                       <button
                         onClick={handleDismissWarningClick}
-                        className="w-full py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/30 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-colors"
+                        className="w-full bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/30 rounded-lg font-extrabold uppercase tracking-wider transition-colors cursor-pointer"
+                        style={{
+                          height: '34px',
+                          fontSize: '12px',
+                          padding: '0 10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
                         Dismiss Warning
                       </button>
                     </div>
 
-                    <p className="text-[10px] text-center text-slate-500 font-semibold tracking-wide">
+                    <p className="text-[8px] text-center text-slate-500 font-semibold tracking-wide">
                       Edge AI anomaly verification via Isolation Forest model
                     </p>
                   </div>
