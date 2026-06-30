@@ -1471,18 +1471,18 @@
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: isMobile ? '120px' : '160px',
+                      height: isMobile ? '140px' : '190px',
                       position: 'relative',
                       margin: '0 auto',
                       width: '100%'
                     }}>
                       <RadialBarChart
-                        width={isMobile ? 150 : 200}
-                        height={isMobile ? 85 : 110}
+                        width={isMobile ? 180 : 260}
+                        height={isMobile ? 90 : 130}
                         cx="50%"
                         cy="100%"
-                        innerRadius="80%"
-                        outerRadius="110%"
+                        innerRadius="70%"
+                        outerRadius="100%"
                         barSize={isMobile ? 10 : 14}
                         data={[{ value: displaySoh, fill: getGaugeColor(displaySoh) }]}
                         startAngle={180}
@@ -1506,15 +1506,15 @@
                       
                       <div style={{
                         position: 'absolute',
-                        top: '60%',
+                        bottom: isMobile ? '12px' : '20px',
                         left: '50%',
-                        transform: 'translate(-50%, -50%)',
+                        transform: 'translateX(-50%)',
                         textAlign: 'center',
                         width: '100%',
                         pointerEvents: 'none'
                       }}>
                         <div style={{
-                          fontSize: isMobile ? '20px' : '26px',
+                          fontSize: isMobile ? '22px' : '28px',
                           fontWeight: 'bold',
                           color: '#fff',
                           lineHeight: 1.1,
@@ -1523,7 +1523,7 @@
                           {isIsolated ? '0' : displaySoh}%
                         </div>
                         <div style={{
-                          fontSize: isMobile ? '8px' : '10px',
+                          fontSize: isMobile ? '9px' : '11px',
                           color: '#888',
                           marginTop: '4px',
                           letterSpacing: '0.5px',
